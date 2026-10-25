@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="mane" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#78350F"/>
+      <stop offset="50%" stop-color="#451A03"/>
+      <stop offset="100%" stop-color="#2A1A08"/>
+    </linearGradient>
+    <linearGradient id="face" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+    <linearGradient id="snout" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FEF3C7"/>
+      <stop offset="100%" stop-color="#FDE68A"/>
+    </linearGradient>
+  </defs>
+  <!-- Mane -->
+  <path d="M24 3 C16 3 9 8 7 15 C5 22 7 30 11 36 C15 42 21 45 24 45 C27 45 33 42 37 36 C41 30 43 22 41 15 C39 8 32 3 24 3 Z" fill="url(#mane)"/>
+  <!-- Ears -->
+  <circle cx="13" cy="14" r="5" fill="#B45309"/>
+  <circle cx="13" cy="14" r="2.5" fill="#FEF3C7"/>
+  <circle cx="35" cy="14" r="5" fill="#B45309"/>
+  <circle cx="35" cy="14" r="2.5" fill="#FEF3C7"/>
+  <!-- Face Shield -->
+  <path d="M24 10 C17 10 13 15 13 22 C13 30 19 36 24 38 C29 36 35 30 35 22 C35 15 31 10 24 10 Z" fill="url(#face)"/>
+  <!-- Eyes -->
+  <ellipse cx="19" cy="21" rx="2" ry="2.6" fill="#2A1A08"/>
+  <circle cx="18.5" cy="20" r="0.7" fill="#FFFFFF"/>
+  <ellipse cx="29" cy="21" rx="2" ry="2.6" fill="#2A1A08"/>
+  <circle cx="28.5" cy="20" r="0.7" fill="#FFFFFF"/>
+  <!-- Snout -->
+  <path d="M24 24 C20 24 18 27 18 31 C18 34 21 35.5 24 35.5 C27 35.5 30 34 30 31 C30 27 28 24 24 24 Z" fill="url(#snout)"/>
+  <!-- Nose -->
+  <polygon points="24,27 21.5,25 26.5,25" fill="#451A03"/>
+  <line x1="24" y1="27" x2="24" y2="30.5" stroke="#451A03" stroke-width="1.2" stroke-linecap="round"/>
+</svg>

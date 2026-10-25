@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="shield" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F43F5E"/>
+      <stop offset="50%" stop-color="#BE185D"/>
+      <stop offset="100%" stop-color="#701A75"/>
+    </linearGradient>
+    <linearGradient id="blade" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="50%" stop-color="#FCE7F3"/>
+      <stop offset="100%" stop-color="#DDD6FE"/>
+    </linearGradient>
+  </defs>
+  <!-- Shield Backing -->
+  <path d="M24 4 C14 4 9 9 9 19 C9 30 17 39 24 44 C31 39 39 30 39 19 C39 9 34 4 24 4 Z" fill="url(#shield)"/>
+  <!-- Inner Shield Border -->
+  <path d="M24 7 C16 7 12 11 12 19 C12 28 18 35 24 40 C30 35 36 28 36 19 C36 11 32 7 24 7 Z" fill="none" stroke="#FCE7F3" stroke-opacity="0.35" stroke-width="1.5"/>
+  <!-- Valiant Star Emblem -->
+  <path d="M24 13 L26.2 21 L34 23.2 L26.2 25.4 L24 33 L21.8 25.4 L14 23.2 L21.8 21 Z" fill="url(#blade)"/>
+  <circle cx="24" cy="23.2" r="1.8" fill="#BE185D"/>
+</svg>

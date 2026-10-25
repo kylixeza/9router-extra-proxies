@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leon</title>
+<link rel="icon" type="image/svg+xml" href="/dashboard/assets/leon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['"JetBrains Mono"','monospace'],display:['Cinzel','serif']}}}}</script>
+<link rel="stylesheet" href="/dashboard/assets/leon.css">
+</head>
+<body class="min-h-screen font-sans text-sm flex">
+
+<!-- Side Navigation Bar -->
+<aside class="w-60 min-h-screen bg-[#F8F4EC] border-r hair flex flex-col justify-between shrink-0 sticky top-0 h-screen">
+  <div>
+    <!-- Brand -->
+    <div class="h-16 px-5 border-b hair flex items-center gap-3">
+      <img src="/dashboard/assets/leon.svg" alt="Leon" class="w-8 h-8 rounded-lg shadow-sm">
+      <div class="flex items-center gap-2">
+        <span class="font-display font-bold text-base tracking-wider text-[#2A1A08]">LEON</span>
+        <span id="hbadge" class="text-[10px] font-mono text-[#856E52] border hair rounded-full px-1.5 py-0.2 bg-[#FFFEFA] shadow-xs">20129</span>
+      </div>
+    </div>
+
+    <!-- Navigation Links -->
+    <nav class="p-3 space-y-1 font-mono">
+      <button id="nav-overview" onclick="showView('overview')" class="lion-nav-link active">Overview</button>
+      <button id="nav-usage" onclick="showView('usage')" class="lion-nav-link">Usage</button>
+      <button id="nav-models" onclick="showView('models')" class="lion-nav-link">Models</button>
+      <button id="nav-logs" onclick="showView('logs')" class="lion-nav-link">Logs</button>
+      <button id="nav-config" onclick="showView('config')" class="lion-nav-link">Config</button>
+    </nav>
+  </div>
+
+  <!-- Sidebar Footer: Status & Cross Link -->
+  <div class="p-3 border-t hair space-y-2 font-mono text-xs">
+    <div class="px-2 text-[11px] text-[#856E52]">
+      <div id="hup">up -</div>
+    </div>
+    <div class="flex items-center gap-2 pt-1">
+      <button onclick="reload()" class="flex-1 h-8 rounded-lg bg-[#FFFEFA] border hair hover:border-[#D6BD96] text-[#451A03] text-xs font-medium">Reload</button>
+      <a href="http://127.0.0.1:20130/dashboard" target="_blank" class="flex-1 h-8 rounded-lg bg-white border border-rose-300 text-rose-900 text-xs font-medium flex items-center justify-center hover:bg-rose-50" title="Valiant context layer">Valiant</a>
+    </div>
+  </div>
+</aside>
+
+<!-- Main Workspace -->
+<main class="flex-1 p-6 space-y-5 overflow-y-auto max-w-7xl">
+
+<!-- ==================== VIEW: OVERVIEW ==================== -->
+<section id="view-overview" class="space-y-4">
+  <div id="cards" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3"></div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+    <div class="card p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold text-sm text-[#2A1A08]">Traffic</h2>
+        <span class="text-[10px] font-mono text-[#856E52]">polled 2s</span>
+      </div>
+      <div id="traffic" class="text-xs font-mono text-[#2A1A08] leading-relaxed">-</div>
+    </div>
+    <div class="card p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold text-sm text-[#2A1A08]">Resilience</h2>
+        <span class="text-[10px] font-mono text-[#856E52]">circuit</span>
+      </div>
+      <div id="resil" class="text-xs font-mono text-[#2A1A08] leading-relaxed">-</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== VIEW: USAGE ==================== -->
+<section id="view-usage" class="hidden">
+  <div class="card p-4">
+    <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
+      <h2 class="font-semibold text-[#2A1A08] text-sm">Usage Analytics</h2>
+      <div class="flex items-center gap-1 bg-[#F3ECE0] border hair p-0.5 rounded-lg text-xs font-mono">
+        <button id="tf-today" onclick="setTimeframe('today')" class="px-2.5 py-1 rounded-md text-[#856E52] hover:text-[#2A1A08]">Today</button>
+        <button id="tf-7d" onclick="setTimeframe('7d')" class="px-2.5 py-1 rounded-md text-[#856E52] hover:text-[#2A1A08]">7 Days</button>
+        <button id="tf-30d" onclick="setTimeframe('30d')" class="px-2.5 py-1 rounded-md text-[#856E52] hover:text-[#2A1A08]">30 Days</button>
+        <button id="tf-all" onclick="setTimeframe('all')" class="px-2.5 py-1 rounded-md bg-[#451A03] text-amber-200 font-semibold shadow-sm">All Time</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <!-- Provider Breakdown -->
+      <div class="border hair rounded-xl p-3 bg-[#FFFEFA]">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-[#2A1A08]">Provider Share</span>
+          <span id="u-prov-total" class="text-[11px] font-mono text-[#856E52]">-</span>
+        </div>
+        <div id="u-prov-bar" class="h-2.5 w-full bg-[#E8D9C0] rounded-full flex overflow-hidden mb-3"></div>
+        <div id="u-prov-list" class="space-y-1.5 text-xs font-mono text-[#2A1A08]"></div>
+      </div>
+
+      <!-- Model Breakdown -->
+      <div class="border hair rounded-xl p-3 bg-[#FFFEFA]">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-[#2A1A08]">Top Models</span>
+          <span id="u-model-total" class="text-[11px] font-mono text-[#856E52]">-</span>
+        </div>
+        <div id="u-model-list" class="space-y-2 text-xs font-mono text-[#2A1A08]"></div>
+      </div>
+
+      <!-- Project Breakdown -->
+      <div class="border hair rounded-xl p-3 bg-[#FFFEFA]">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-[#2A1A08]">Project Allocation</span>
+          <span id="u-proj-total" class="text-[11px] font-mono text-[#856E52]">-</span>
+        </div>
+        <div id="u-proj-list" class="space-y-2 text-xs font-mono text-[#2A1A08] mb-3"></div>
+        <div class="pt-2 border-t hair">
+          <div class="text-[11px] font-semibold text-[#856E52] uppercase tracking-wider mb-1.5">24h Runaway Meter</div>
+          <div id="u-runaway-list" class="space-y-1 text-xs font-mono"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== VIEW: MODELS ==================== -->
+<section id="view-models" class="hidden">
+  <div class="card p-4 overflow-hidden">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold text-[#2A1A08] text-sm">Models</h2>
+      <button onclick="reload()" class="h-7 px-2.5 rounded-md border hair text-xs font-mono bg-[#FFFEFA] hover:border-[#D6BD96]">Refresh</button>
+    </div>
+    <div class="overflow-x-auto"><table class="w-full text-xs">
+      <thead><tr class="text-left font-mono text-[#856E52] border-b hair bg-[#F3ECE0]/50">
+        <th class="py-2 px-3 font-semibold text-[#451A03]">model</th>
+        <th class="py-2 pr-3 font-semibold text-[#451A03] text-right">req</th>
+        <th class="py-2 pr-3 font-semibold text-[#451A03] text-right">prompt</th>
+        <th class="py-2 pr-3 font-semibold text-[#451A03] text-right">compl</th>
+        <th class="py-2 px-3 font-semibold text-[#451A03] text-right">avg ms</th>
+      </tr></thead>
+      <tbody id="models" class="font-mono text-[#2A1A08] divide-y hair"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ==================== VIEW: LOGS ==================== -->
+<section id="view-logs" class="hidden">
+  <div class="card overflow-hidden">
+    <div class="px-4 py-3 border-b hair flex items-center justify-between bg-[#F8F4EC]/60 flex-wrap gap-2">
+      <div class="text-xs font-medium text-[#2A1A08] flex items-center gap-2">
+        <span class="font-semibold">Logs</span>
+        <span id="lsrc" class="font-mono text-[#856E52] text-[11px]"></span>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap justify-end">
+        <select id="proj" onchange="page=1;reloadLogs()" class="h-8 px-2 rounded-md bg-[#FFFEFA] border hair text-xs max-w-[160px] text-[#2A1A08]">
+          <option value="">all projects</option>
+        </select>
+        <input id="dfrom" type="date" onchange="page=1;reloadLogs()" class="h-8 px-2 rounded-md bg-[#FFFEFA] border hair text-xs text-[#2A1A08]">
+        <span class="text-xs text-[#856E52]">–</span>
+        <input id="dto" type="date" onchange="page=1;reloadLogs()" class="h-8 px-2 rounded-md bg-[#FFFEFA] border hair text-xs text-[#2A1A08]">
+        <input id="q" oninput="page=1;debouncedLogs()" placeholder="filter id, model, path…" class="h-8 w-44 px-2 rounded-md bg-[#FFFEFA] border hair text-xs text-[#2A1A08]">
+        <button onclick="clearFilters()" title="clear filters" class="h-8 px-2.5 rounded-lg border hair text-xs hover:border-[#D6BD96] bg-[#FFFEFA]">✕</button>
+        <button id="bmToggle" onclick="toggleBookmarkFilter()" title="show bookmarked only" class="h-8 px-2.5 rounded-lg border hair text-xs hover:border-[#D6BD96] bg-[#FFFEFA]">☆</button>
+        <button onclick="page=1;reloadLogs()" class="h-8 px-3 rounded-lg border hair text-xs hover:border-[#D6BD96] bg-[#FFFEFA] font-medium text-[#451A03]">Reload</button>
+      </div>
+    </div>
+    <div class="overflow-x-auto"><table class="w-full text-xs">
+      <thead><tr class="text-left font-mono text-[#856E52] border-b hair bg-[#F3ECE0]/40">
+        <th class="py-2 pl-4 pr-1 font-medium">★</th>
+        <th class="py-2 px-1 font-medium">id</th>
+        <th class="py-2 pr-3 font-medium">date ↓</th>
+        <th class="py-2 pr-3 font-medium">project</th>
+        <th class="py-2 pr-3 font-medium">method path</th>
+        <th class="py-2 pr-3 font-medium">provider / model</th>
+        <th class="py-2 pr-3 font-medium text-right">status</th>
+        <th class="py-2 pr-3 font-medium text-right">ms</th>
+        <th class="py-2 px-4 font-medium text-right">tok (actual / est)</th>
+      </tr></thead>
+      <tbody id="logs" class="font-mono text-[#2A1A08]"></tbody>
+    </table></div>
+    <div class="px-4 py-2.5 border-t hair flex items-center justify-between text-xs font-mono text-[#856E52] bg-[#F8F4EC]/40">
+      <div id="pginfo">-</div>
+      <div class="flex items-center gap-1.5">
+        <button onclick="prevPage()" class="h-7 px-2.5 rounded-md border hair hover:border-[#D6BD96] bg-[#FFFEFA]">‹ Prev</button>
+        <select id="ps" onchange="page=1;reloadLogs()" class="h-7 px-1 rounded-md bg-[#FFFEFA] border hair text-[#2A1A08]"><option>20</option><option selected>50</option><option>100</option></select>
+        <button onclick="nextPage()" class="h-7 px-2.5 rounded-md border hair hover:border-[#D6BD96] bg-[#FFFEFA]">Next ›</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== VIEW: CONFIG ==================== -->
+<section id="view-config" class="hidden">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+    <div class="card p-4">
+      <h2 class="font-semibold text-sm text-[#2A1A08] mb-3">Configuration</h2>
+      <div id="cfg" class="text-[11px] font-mono text-[#451A03] whitespace-pre-wrap break-all custom-scroll max-h-80 overflow-y-auto bg-[#F8F4EC] p-3 rounded-lg border hair">-</div>
+    </div>
+    <div class="card p-4">
+      <h2 class="font-semibold text-sm text-[#2A1A08] mb-1">Upstream Models Cache</h2>
+      <div id="mc" class="text-xs font-mono text-[#2A1A08] bg-[#F8F4EC] p-3 rounded-lg border hair leading-relaxed mt-3">-</div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- Log Inspector Dialog -->
+<dialog id="dlg" class="rounded-xl p-0 border hair text-[#2A1A08] max-w-3xl w-full bg-[#FFFEFA] shadow-2xl">
+  <div class="p-5">
+    <div class="flex items-center justify-between mb-3">
+      <h3 id="dt" class="font-semibold font-mono text-sm text-[#451A03]">req</h3>
+      <div class="flex items-center gap-2">
+        <button onclick="toggleDlgBookmark()" id="dlgBmBtn" class="h-8 px-3 rounded-lg border hair text-xs hover:border-[#D6BD96] bg-[#FFFEFA]">☆ Bookmark</button>
+        <button onclick="copyLog()" class="h-8 px-3 rounded-lg border hair text-xs hover:border-[#D6BD96] bg-[#FFFEFA]">Copy</button>
+        <button onclick="this.closest('dialog').close()" class="h-8 px-3 text-xs text-[#856E52]">Close</button>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 mb-3">
+      <input id="bmNote" placeholder="bookmark note (optional, 500 chars)…" maxlength="500" class="h-8 flex-1 px-2 rounded-md bg-[#F8F4EC] border hair text-xs text-[#2A1A08]">
+      <button onclick="saveBookmarkNote()" class="h-8 px-3 rounded-lg border hair text-xs hover:border-[#D6BD96] bg-[#451A03] text-amber-200 font-medium">Save note</button>
+    </div>
+    <pre id="db" class="mono text-[11px] bg-[#F8F4EC] border hair rounded-lg p-3 max-h-[60vh] overflow-auto custom-scroll whitespace-pre-wrap break-all text-[#2A1A08]"></pre>
+  </div>
+</dialog>
+
+<div id="toast" class="fixed right-4 bottom-4 z-50 flex flex-col gap-2"></div>
+
+<!-- Scripts modular split -->
+<script src="/dashboard/assets/js/shared.js"></script>
+<script src="/dashboard/assets/js/overview.js"></script>
+<script src="/dashboard/assets/js/usage.js"></script>
+<script src="/dashboard/assets/js/models.js"></script>
+<script src="/dashboard/assets/js/logs.js"></script>
+<script src="/dashboard/assets/js/nav.js"></script>
+<script src="/dashboard/assets/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>9Router Proxy Context Layer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['"JetBrains Mono"','monospace']}}}}</script>
+<style>
+body{background:#F7F7F5;color:#18181b;-webkit-font-smoothing:antialiased}
+.card{background:#fff;border:1px solid #e4e4e7;border-radius:12px}
+.card:hover{border-color:#d4d4d8}
+.hair{border-color:#e4e4e7}
+.custom-scroll::-webkit-scrollbar{width:4px;height:4px}
+.custom-scroll::-webkit-scrollbar-thumb{background:#d4d4d8;border-radius:99px}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+summary::-webkit-details-marker{display:none}
+input:focus,textarea:focus{outline:none;border-color:#18181b !important}
+</style>
+</head>
+<body class="min-h-screen font-sans text-sm flex flex-col">
+
+<header class="sticky top-0 z-30 bg-[#F7F7F5]/85 backdrop-blur border-b hair">
+<div class="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-7 h-7 rounded-md bg-zinc-900 text-white flex items-center justify-center text-xs font-bold">9r</div>
+<div class="flex items-center gap-2">
+<span class="font-semibold tracking-tight whitespace-nowrap">9Router Proxy Context Layer</span>
+<span class="text-[11px] font-mono text-zinc-500 border hair rounded-full px-2 py-0.5 bg-white flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>context · :20130</span>
+</div>
+</div>
+<div class="hidden md:flex items-center gap-4 text-xs font-mono text-zinc-500">
+<span>providers <b id="stP" class="text-zinc-900">-</b></span>
+<span>skills <b id="stS" class="text-zinc-900">-</b></span>
+<span>tools <b id="stT" class="text-zinc-900">-</b></span>
+<span>keywords <b id="stK" class="text-zinc-900">-</b></span>
+</div>
+<div class="flex items-center gap-2">
+<button onclick="reload()" class="w-8 h-8 rounded-lg bg-white border hair flex items-center justify-center hover:border-zinc-400" title="Reload"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i></button>
+<button onclick="openDlg('dlgP')" class="h-8 px-3 rounded-lg bg-white border hair text-xs font-medium hover:border-zinc-400">+ Provider</button>
+<button onclick="openDlg('dlgS')" class="h-8 px-3 rounded-lg bg-zinc-900 text-white text-xs font-medium hover:bg-zinc-800">+ Skill</button>
+</div>
+</div>
+</header>
+
+<div class="border-b hair bg-[#F7F7F5]">
+<div class="max-w-6xl mx-auto px-5 py-3 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+<div class="relative w-full sm:w-80">
+<i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"></i>
+<input id="q" oninput="render()" placeholder="Filter providers, skills, keywords…" class="w-full h-9 pl-9 pr-3 rounded-lg bg-white border hair text-xs placeholder:text-zinc-400">
+</div>
+<div class="flex items-center gap-1 p-1 rounded-lg bg-white border hair w-fit">
+<button id="tabP" onclick="tab('P')" class="px-3 h-7 rounded-md text-xs font-medium bg-zinc-900 text-white">Providers (<span id="tabCountP">0</span>)</button>
+<button id="tabS" onclick="tab('S')" class="px-3 h-7 rounded-md text-xs font-medium text-zinc-500 hover:text-zinc-900">Skills (<span id="tabCountS">0</span>)</button>
+<button id="tabM" onclick="tab('M')" class="px-3 h-7 rounded-md text-xs font-medium text-zinc-500 hover:text-zinc-900">Match test</button>
+<button id="tabI" onclick="tab('I')" class="px-3 h-7 rounded-md text-xs font-medium text-zinc-500 hover:text-zinc-900">Instructions</button>
+</div>
+</div>
+</div>
+
+<main class="flex-1 max-w-6xl w-full mx-auto px-5 py-6">
+<section id="viewM" class="hidden mb-6">
+<div class="card p-5">
+<p class="text-xs font-mono uppercase tracking-widest text-zinc-400 mb-1">Sandbox</p>
+<h2 class="font-semibold tracking-tight mb-3">Test prompt routing</h2>
+<div class="flex flex-col sm:flex-row gap-2">
+<textarea id="mtext" rows="2" placeholder="e.g. review PR diff and draw architecture diagram on figma" class="flex-1 px-3 py-2 rounded-lg bg-[#F7F7F5] border hair text-sm resize-none"></textarea>
+<button onclick="doMatch()" class="sm:w-28 h-10 rounded-lg bg-zinc-900 text-white text-xs font-medium hover:bg-zinc-800">Run</button>
+</div>
+<div id="matchResBox" class="hidden mt-4 pt-4 border-t hair">
+<div id="matchRes" class="flex flex-wrap gap-1.5"></div>
+<div class="mt-2"><button onclick="clearMatch()" class="text-xs text-zinc-400 hover:text-zinc-900">Clear</button></div>
+</div>
+</div>
+</section>
+<section id="viewP"><div id="provs" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div></section>
+<section id="viewS" class="hidden"><div id="skills" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div></section>
+<section id="viewI" class="hidden mb-6">
+<div class="card p-5">
+<p class="text-xs font-mono uppercase tracking-widest text-zinc-400 mb-1">Single active instruction · markdown</p>
+<h2 class="font-semibold tracking-tight mb-1">Base instructions</h2>
+<p class="text-[11px] text-zinc-500 mb-3">DB wins when non-empty. Request time appends only keyword-matched <code class="font-mono bg-zinc-100 px-1 rounded">&lt;skill&gt;</code> blocks from incoming. Empty = fallback to incoming as-is. Skills stay keyword-modular.</p>
+<textarea id="instrTree" style="display:none"></textarea>
+<div id="instrAcc" class="flex flex-col gap-4"></div>
+<div class="flex items-center gap-2 mt-3 flex-wrap">
+<button onclick="saveInstr()" class="h-9 px-4 rounded-lg bg-zinc-900 text-white text-xs font-medium hover:bg-zinc-800">Save</button>
+<button onclick="loadInstr()" class="h-9 px-3 rounded-lg bg-white border hair text-xs font-medium hover:border-zinc-400">Reload</button>
+<button onclick="addRootHeader()" class="h-9 px-3 rounded-lg bg-white border hair text-xs font-medium hover:border-zinc-400">+ Header</button>
+<button onclick="addRootText()" class="h-9 px-3 rounded-lg bg-white border hair text-xs font-medium hover:border-zinc-400">+ Text</button>
+<button onclick="genInstr()" class="h-9 px-3 rounded-lg bg-white border hair text-xs font-medium hover:border-zinc-400">Generate from template</button>
+<button onclick="previewTpl()" class="h-9 px-3 rounded-lg bg-white border hair text-xs font-medium hover:border-zinc-400">Preview template</button>
+<button onclick="clearInstr()" class="h-9 px-3 rounded-lg bg-white border hair text-xs font-medium text-zinc-500 hover:text-red-600">Clear (fallback to incoming)</button>
+<span id="instrMeta" class="ml-auto text-[11px] font-mono text-zinc-400"></span>
+</div>
+<div id="tplBox" class="hidden mt-3"><p class="text-[11px] font-mono text-zinc-400 mb-1">template preview (read-only, first 4000 chars)</p><pre id="tplPre" class="max-h-64 overflow-y-auto custom-scroll p-3 rounded-lg bg-[#FAFAF9] border hair text-[11px] font-mono whitespace-pre-wrap"></pre></div>
+</div>
+</section>
+<section class="card mt-6 overflow-hidden">
+<div class="px-4 py-2.5 border-b hair flex items-center justify-between">
+<div class="text-xs font-medium">terminal — type <code class="font-mono bg-zinc-100 px-1 rounded">help</code></div>
+<button onclick="clearCmd()" class="text-[11px] text-zinc-400 hover:text-zinc-900">clear</button>
+</div>
+<div id="cmdOut" class="px-4 py-3 h-36 overflow-y-auto custom-scroll font-mono text-[11px] leading-relaxed text-zinc-600 bg-[#FAFAF9]"><div>try: add skill foo path=/x/SKILL.md kw=review, diff · ask review this PR</div></div>
+<div class="flex items-center gap-2 p-2 border-t hair">
+<span class="pl-2 font-mono text-xs text-zinc-400">›</span>
+<input id="cmd" onkeydown="if(event.key==='Enter')runCmd()" placeholder="add skill foo path=/…/SKILL.md kw=review, diff ··· ask review this PR" class="flex-1 h-9 px-2 bg-transparent text-xs font-mono placeholder:text-zinc-400">
+<button onclick="runCmd()" class="h-8 px-3 rounded-lg bg-zinc-900 text-white text-xs font-medium">Run</button>
+</div>
+</section>
+<p class="mt-8 text-[11px] font-mono text-zinc-400">recent.design pick: minimal light SaaS. hairlines beat gradients. no restart needed — HTML read from disk.</p>
+</main>
+
+<dialog id="dlgP" class="rounded-xl p-0 border hair text-zinc-900 max-w-sm w-full"><div class="p-5">
+<h3 class="font-semibold tracking-tight mb-4">New provider</h3>
+<label class="text-xs font-medium">Name</label>
+<input id="np" placeholder="github" class="mt-1 mb-3 w-full px-3 h-9 rounded-lg border hair bg-white text-xs font-mono">
+<label class="text-xs font-medium">Keywords (comma separated)</label>
+<input id="npkw" placeholder="pull request, issue, commit" class="mt-1 w-full px-3 h-9 rounded-lg border hair bg-white text-xs">
+<div class="flex justify-end gap-2 mt-5"><button onclick="this.closest('dialog').close()" class="h-8 px-3 text-xs text-zinc-500">Cancel</button><button onclick="addProvider()" class="h-8 px-4 rounded-lg bg-zinc-900 text-white text-xs font-medium">Create</button></div>
+</div></dialog>
+
+<dialog id="dlgS" class="rounded-xl p-0 border hair text-zinc-900 max-w-sm w-full"><div class="p-5">
+<h3 class="font-semibold tracking-tight mb-4">New skill</h3>
+<label class="text-xs font-medium">Name</label>
+<input id="ns" placeholder="code-review" class="mt-1 mb-3 w-full px-3 h-9 rounded-lg border hair bg-white text-xs font-mono">
+<label class="text-xs font-medium">Path</label>
+<input id="nsp" placeholder="/…/SKILL.md" class="mt-1 mb-3 w-full px-3 h-9 rounded-lg border hair bg-white text-[11px] font-mono">
+<label class="text-xs font-medium">Keywords</label>
+<input id="nskw" placeholder="review, diff, pr" class="mt-1 w-full px-3 h-9 rounded-lg border hair bg-white text-xs">
+<div class="flex justify-end gap-2 mt-5"><button onclick="this.closest('dialog').close()" class="h-8 px-3 text-xs text-zinc-500">Cancel</button><button onclick="addSkill()" class="h-8 px-4 rounded-lg bg-zinc-900 text-white text-xs font-medium">Save</button></div>
+</div></dialog>
+
+<div id="toast" class="fixed right-4 bottom-4 z-50 flex flex-col gap-2"></div>
+
+<script>
+let D={providers:[],skills:[]},curTab='P';
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function q(s){return String(s??'').replace(/'/g,"\\'")}
+function toast(msg,err=false){const b=document.getElementById('toast'),el=document.createElement('div');el.className='flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium shadow-lg '+(err?'bg-red-600 text-white':'bg-zinc-900 text-white');el.textContent=msg;b.appendChild(el);setTimeout(()=>el.remove(),2400)}
+function openDlg(id){document.getElementById(id).showModal()}
+function tab(t){curTab=t;['P','S','M','I'].forEach(x=>{const b=document.getElementById('tab'+x),v=document.getElementById('view'+x);if(x===t){b.className='px-3 h-7 rounded-md text-xs font-medium bg-zinc-900 text-white';v.classList.remove('hidden')}else{b.className='px-3 h-7 rounded-md text-xs font-medium text-zinc-500 hover:text-zinc-900';v.classList.add('hidden')}});if(t==='I')loadInstr()}
+async function api(p,m='GET',body=null){const k=localStorage.getItem('9r-key')||'';const h={'content-type':'application/json'};if(k)h['authorization']='Bearer '+k;const r=await fetch(p,{method:m,headers:h,body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(p+' '+r.status);return r.json().catch(()=>({}))}
+async function reload(){try{D=await api('/api/index');render()}catch(e){toast(e.message,true)}}
+function kwPill(k,fn){return `<span class="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-md text-[11px] bg-zinc-100 border hair text-zinc-700">${esc(k)}<button onclick="${fn}" class="w-4 h-4 rounded flex items-center justify-center text-zinc-400 hover:text-red-600 hover:bg-white">×</button></span>`}
+function render(){
+const f=(document.getElementById('q').value||'').toLowerCase().trim();
+const P=D.providers.filter(p=>!f||p.name.toLowerCase().includes(f)||p.keywords.some(k=>k.toLowerCase().includes(f))||p.toolNames.some(t=>t.toLowerCase().includes(f)));
+const S=D.skills.filter(s=>!f||s.name.toLowerCase().includes(f)||(s.path||'').toLowerCase().includes(f)||s.keywords.some(k=>k.toLowerCase().includes(f)));
+document.getElementById('stP').textContent=D.providers.length;
+document.getElementById('stS').textContent=D.skills.length;
+document.getElementById('stT').textContent=D.providers.reduce((a,p)=>a+p.tools,0);
+document.getElementById('stK').textContent=D.providers.reduce((a,p)=>a+p.keywords.length,0)+D.skills.reduce((a,s)=>a+s.keywords.length,0);
+document.getElementById('tabCountP').textContent=P.length;document.getElementById('tabCountS').textContent=S.length;
+document.getElementById('provs').innerHTML=P.length?P.map(p=>`
+<div class="card p-4 flex flex-col">
+<div class="flex items-start justify-between mb-2">
+<div class="flex items-center gap-2"><div class="w-7 h-7 rounded-md bg-zinc-900 text-white flex items-center justify-center text-[10px] font-bold uppercase">${esc(p.name.slice(0,2))}</div>
+<div><div class="font-semibold text-[13px] leading-tight">${esc(p.name)}</div><div class="text-[11px] font-mono text-zinc-400">${p.tools} tools · ${p.keywords.length} keys</div></div></div>
+<button onclick="delP('${esc(p.name)}')" class="text-zinc-300 hover:text-red-600"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></div>
+<div class="flex flex-wrap gap-1 my-2 max-h-24 overflow-y-auto custom-scroll">${p.keywords.map(k=>kwPill(k,`delPK('${q(p.name)}','${q(k)}')`)).join('')||'<span class="text-[11px] text-zinc-400 italic">no keywords</span>'}</div>
+<div class="flex gap-1.5 mt-1"><input id="pk-${esc(p.name)}" placeholder="add keyword ⏎" onkeydown="if(event.key==='Enter')addPK('${esc(p.name)}')" class="flex-1 h-8 px-2 rounded-md bg-[#F7F7F5] border hair text-xs"><button onclick="addPK('${esc(p.name)}')" class="h-8 px-2.5 rounded-md border hair text-xs hover:border-zinc-400">Add</button></div>
+<details class="mt-2 pt-2 border-t hair"><summary class="text-[11px] font-mono text-zinc-400 cursor-pointer hover:text-zinc-900">tools (${p.tools}) +</summary>
+<div class="mt-1 max-h-40 overflow-y-auto custom-scroll">${p.toolNames.map(t=>`<div class="flex items-center justify-between py-1 text-[11px] font-mono text-zinc-600 border-b hair last:border-0"><span class="truncate">${esc(t)}</span><span class="flex gap-1"><button onclick="moveTool('${q(t)}')" class="text-zinc-300 hover:text-zinc-900">⇄</button><button onclick="delTool('${q(t)}')" class="text-zinc-300 hover:text-red-600">×</button></span></div>`).join('')}</div></details>
+</div>`).join(''):`<div class="col-span-full card p-10 text-center text-xs text-zinc-400">No providers match.</div>`;
+document.getElementById('skills').innerHTML=S.length?S.map(s=>`
+<div class="card p-4 flex flex-col">
+<div class="flex items-start justify-between mb-2">
+<div class="flex items-center gap-2"><div class="w-7 h-7 rounded-md border hair bg-[#F7F7F5] flex items-center justify-center text-xs">✦</div>
+<div><div class="font-semibold text-[13px] leading-tight">${esc(s.name)}</div><div class="text-[11px] font-mono text-zinc-400">${s.keywords.length} keys</div></div></div>
+<button onclick="delS('${esc(s.name)}')" class="text-zinc-300 hover:text-red-600"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></div>
+<div class="flex gap-1.5 my-2"><input id="sp-${esc(s.name)}" value="${esc(s.path||'')}" placeholder="/path/SKILL.md" class="flex-1 h-8 px-2 rounded-md bg-[#F7F7F5] border hair text-[11px] font-mono"><button onclick="setPath('${esc(s.name)}')" class="h-8 px-2 rounded-md border hair text-[11px]">Save</button></div>
+<div class="flex flex-wrap gap-1 my-1 max-h-24 overflow-y-auto custom-scroll">${s.keywords.map(k=>kwPill(k,`delSK('${q(s.name)}','${q(k)}')`)).join('')||'<span class="text-[11px] text-zinc-400 italic">no keywords</span>'}</div>
+<div class="flex gap-1.5 mt-2"><input id="sk-${esc(s.name)}" placeholder="add keyword ⏎" onkeydown="if(event.key==='Enter')addSK('${esc(s.name)}')" class="flex-1 h-8 px-2 rounded-md bg-[#F7F7F5] border hair text-xs"><button onclick="addSK('${esc(s.name)}')" class="h-8 px-2.5 rounded-md border hair text-xs hover:border-zinc-400">Add</button></div>
+</div>`).join(''):`<div class="col-span-full card p-10 text-center text-xs text-zinc-400">No skills match.</div>`;
+lucide.createIcons()}
+async function doMatch(){const t=document.getElementById('mtext').value.trim();if(!t)return toast('enter prompt first',true);try{const r=await api('/api/match','POST',{text:t});document.getElementById('matchResBox').classList.remove('hidden');document.getElementById('matchRes').innerHTML=r.providers.map(p=>`<span class="px-2 py-1 rounded-md text-[11px] font-medium bg-zinc-900 text-white">mcp:${esc(p)}</span>`).join('')+r.skills.map(s=>`<span class="px-2 py-1 rounded-md text-[11px] font-medium bg-white border hair">skill:${esc(s)}</span>`).join('')||'<span class="text-xs text-zinc-400">no match</span>';toast(`match ${r.providers.length} prov / ${r.skills.length} skill`)}catch(e){toast(e.message,true)}}
+function clearMatch(){document.getElementById('mtext').value='';document.getElementById('matchResBox').classList.add('hidden')}
+async function addProvider(){const n=document.getElementById('np').value.trim().toLowerCase(),kw=document.getElementById('npkw').value.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);if(!n)return toast('name required',true);await api('/api/providers','POST',{name:n,keywords:kw});document.getElementById('dlgP').close();reload()}
+async function delP(n){if(!confirm(`delete ${n}?`))return;await api('/api/providers/'+encodeURIComponent(n),'DELETE');reload()}
+async function addPK(p){const i=document.getElementById('pk-'+p),kw=(i?.value||'').trim();if(!kw)return;await api(`/api/providers/${encodeURIComponent(p)}/keywords`,'POST',{keyword:kw});reload()}
+async function delPK(p,k){await api(`/api/providers/${encodeURIComponent(p)}/keywords/${encodeURIComponent(k)}`,'DELETE');reload()}
+async function delTool(t){if(!confirm(`delete ${t}?`))return;await api('/api/tools/'+encodeURIComponent(t),'DELETE');reload()}
+async function moveTool(t){const to=prompt(`move ${t} to?`,D.providers[0]?.name||'');if(!to)return;await api('/api/tools/move','POST',{tool:t,to:to.trim().toLowerCase()});reload()}
+async function addSkill(){const n=document.getElementById('ns').value.trim().toLowerCase(),path=document.getElementById('nsp').value.trim(),kw=document.getElementById('nskw').value.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);if(!n)return toast('name required',true);await api('/api/skills','POST',{name:n,path,keywords:kw});document.getElementById('dlgS').close();reload()}
+async function delS(n){if(!confirm(`delete ${n}?`))return;await api('/api/skills/'+encodeURIComponent(n),'DELETE');reload()}
+async function addSK(s){const i=document.getElementById('sk-'+s),kw=(i?.value||'').trim();if(!kw)return;await api(`/api/skills/${encodeURIComponent(s)}/keywords`,'POST',{keyword:kw});reload()}
+async function delSK(s,k){await api(`/api/skills/${encodeURIComponent(s)}/keywords/${encodeURIComponent(k)}`,'DELETE');reload()}
+async function setPath(s){const path=document.getElementById('sp-'+s)?.value.trim()||'';await api('/api/skills/'+encodeURIComponent(s),'PUT',{path});toast('path saved')}
+async function loadInstr(){try{const r=await api('/api/instructions');renderInstrAcc(r.content||'');const n=(r.content||'').length;document.getElementById('instrMeta').textContent=(r.active?'active':'empty · fallback incoming')+` · ${n} chars`+(r.updatedAt?` · ${r.updatedAt}`:'')+(r.hasTemplate?` · template ✓ ${r.templateLen||0} chars`:' · template — run #9r-sync')}catch(e){toast(e.message,true)}}
+// ponytail: header-tree editor. # = top accordion, deeper # nest. Mixed text/header children keep order.
+function mdParse(text){const root={t:'root',children:[]};const stack=[{level:0,node:root}];let curTxt=null;const lines=String(text||'').split('\n');const pushTxt=(parent,txt)=>{if(!txt)return;const last=parent.children[parent.children.length-1];if(last&&last.t==='x')last.text+=txt;else parent.children.push({t:'x',text:txt})};for(const ln of lines){const m=ln.match(/^(#{1,9})\s+(.*)$/);if(m){curTxt=null;const level=m[1].length,title=m[2].trim()||'Untitled';while(stack.length&&stack[stack.length-1].level>=level)stack.pop();const h={t:'h',level,title,children:[]};stack[stack.length-1].node.children.push(h);stack.push({level,node:h})}else{const top=stack[stack.length-1].node;pushTxt(top,ln+'\n');curTxt=top}}const trim=(a)=>{for(const n of a){if(n.t==='x')n.text=n.text.replace(/^\n+|\s+$/g,'');else trim(n.children)}};trim(root.children);return root.children.filter(n=>n.t==='h'?true:n.text.trim()!=='')}
+function autoGrow(ta){ta.style.height='auto';ta.style.height=Math.min(600,Math.max(56,ta.scrollHeight))+'px'}
+function accBadge(lv){return '#'.repeat(Math.min(3,lv))+(lv>3?'·'+lv:'')}
+function mkBtn(t,fn,title){const b=document.createElement('button');b.textContent=t;b.title=title||t;b.className='h-6 min-w-6 px-1 rounded-md border hair bg-white text-[11px] font-mono text-zinc-500 hover:text-zinc-900 hover:border-zinc-400';b.onclick=(e)=>{e.preventDefault();fn()};return b}
+function textNodeEl(text){const w=document.createElement('div');w.dataset.ntype='x';w.className='rounded-lg border hair bg-[#FAFAF9] p-2';const bar=document.createElement('div');bar.className='flex items-center gap-1 mb-1';const tag=document.createElement('span');tag.className='text-[10px] font-mono text-zinc-400';tag.textContent='text';bar.appendChild(tag);bar.appendChild(Object.assign(document.createElement('span'),{className:'flex-1'}));bar.appendChild(mkBtn('↑',()=>{w.previousElementSibling?w.parentNode.insertBefore(w,w.previousElementSibling):0},'move up'));bar.appendChild(mkBtn('↓',()=>{w.nextElementSibling?w.parentNode.insertBefore(w.nextElementSibling,w):0},'move down'));bar.appendChild(mkBtn('×',()=>w.remove(),'delete'));w.appendChild(bar);const ta=document.createElement('textarea');ta.dataset.body='1';ta.value=text||'';ta.rows=2;ta.className='w-full px-2 py-1.5 rounded-md bg-white border hair text-xs font-mono resize-y';ta.oninput=()=>autoGrow(ta);w.appendChild(ta);requestAnimationFrame(()=>autoGrow(ta));return w}
+function titleFont(lv){return [(lv<=1?'16px':lv===2?'14px':lv===3?'13px':'12px'),lv<=2?'700':'600']}
+function headerNodeEl(level,title){level=Math.min(9,Math.max(1,level||1));const w=document.createElement('div');w.dataset.ntype='h';w.dataset.level=level;w.className='rounded-lg border hair bg-white overflow-hidden';const hd=document.createElement('div');hd.className='flex items-center gap-1.5 px-2.5 py-2 bg-[#F7F7F5] border-b hair';const tg=mkBtn('▾',()=>{const b=w.querySelector('[data-kids]');const hid=b.classList.toggle('hidden');tg.textContent=hid?'▸':'▾'},'collapse');hd.appendChild(tg);const badge=document.createElement('span');badge.dataset.badge='1';badge.className='px-1.5 py-0.5 rounded bg-zinc-900 text-white text-[10px] font-mono whitespace-nowrap';badge.textContent=accBadge(level);hd.appendChild(badge);const inp=document.createElement('input');inp.dataset.title='1';inp.value=title||'Untitled';inp.className='flex-1 h-7 px-2 rounded-md bg-white border hair';const _tf0=titleFont(level);inp.style.fontSize=_tf0[0];inp.style.fontWeight=_tf0[1];inp.onkeydown=(e)=>e.stopPropagation();hd.appendChild(inp);hd.appendChild(mkBtn('−#',()=>{const l=Math.max(1,(+w.dataset.level||1)-1);w.dataset.level=l;badge.textContent=accBadge(l);const _t=titleFont(l);inp.style.fontSize=_t[0];inp.style.fontWeight=_t[1]},'demote (fewer #)'));hd.appendChild(mkBtn('+#',()=>{const l=Math.min(9,(+w.dataset.level||1)+1);w.dataset.level=l;badge.textContent=accBadge(l);const _t2=titleFont(l);inp.style.fontSize=_t2[0];inp.style.fontWeight=_t2[1]},'promote (more #)'));hd.appendChild(mkBtn('↑',()=>{w.previousElementSibling?w.parentNode.insertBefore(w,w.previousElementSibling):0},'move up'));hd.appendChild(mkBtn('↓',()=>{w.nextElementSibling?w.parentNode.insertBefore(w.nextElementSibling,w):0},'move down'));hd.appendChild(mkBtn('×',()=>{if(confirm('Delete section "'+inp.value.slice(0,40)+'"?'))w.remove()},'delete section'));w.appendChild(hd);const kids=document.createElement('div');kids.dataset.kids='1';kids.className='p-2 flex flex-col gap-2';w.appendChild(kids);const bar=document.createElement('div');bar.className='flex items-center gap-1.5 px-2.5 pt-2 pb-2.5';const addH=mkBtn('+ Header',()=>{kids.appendChild(headerNodeEl((+w.dataset.level||1)+1,'New section'));kids.lastChild.scrollIntoView({block:'nearest'})});addH.className='h-7 px-2.5 rounded-md border hair bg-white text-[11px] font-medium text-zinc-600 hover:border-zinc-400';const addT=mkBtn('+ Text',()=>{kids.appendChild(textNodeEl(''));kids.lastChild.scrollIntoView({block:'nearest'})});addT.className='h-7 px-2.5 rounded-md border hair bg-white text-[11px] font-medium text-zinc-600 hover:border-zinc-400';bar.appendChild(addH);bar.appendChild(addT);w.appendChild(bar);return w}
+function buildNode(n){if(n.t==='x')return textNodeEl(n.text||'');const e=headerNodeEl(n.level||1,n.title||'Untitled');const kids=e.querySelector('[data-kids]');for(const c of (n.children||[]))kids.appendChild(buildNode(c));return e}
+function renderInstrAcc(md){const box=document.getElementById('instrAcc');box.innerHTML='';for(const n of mdParse(md))box.appendChild(buildNode(n));if(!box.children.length)box.appendChild(headerNodeEl(1,'Role & Persona'))}
+function serKids(box){let out='';for(const w of box.children){if(w.dataset.ntype==='x'){const t=w.querySelector('[data-body]').value.replace(/\s+$/,'');if(t.trim())out+=t+'\n\n'}else if(w.dataset.ntype==='h'){const lv=+w.dataset.level||1;const ti=(w.querySelector('[data-title]').value||'Untitled').trim();out+='#'.repeat(lv)+' '+ti+'\n\n';out+=serKids(w.querySelector('[data-kids]'))}}return out}
+function instrMarkdown(){return serKids(document.getElementById('instrAcc')).replace(/\s+$/,'')+'\n'}
+function addRootHeader(){document.getElementById('instrAcc').appendChild(headerNodeEl(1,'New section'))}
+function addRootText(){document.getElementById('instrAcc').appendChild(textNodeEl(''))}
+async function saveInstr(){const c=instrMarkdown();try{const r=await api('/api/instructions','POST',{content:c});document.getElementById('instrMeta').textContent=(r.active?'active':'empty · fallback incoming')+` · ${(r.content||'').length} chars`+(r.updatedAt?` · ${r.updatedAt}`:'');toast('instruction saved')}catch(e){toast(e.message,true)}}
+async function clearInstr(){if(!confirm('Clear DB instruction? Requests fall back to incoming.'))return;renderInstrAcc('');await saveInstr()}
+async function genInstr(){try{const r=await api('/api/instructions/generate','POST',{});renderInstrAcc(r.content||'');toast('generated from template — edit + Save')}catch(e){toast(e.message+' (run #9r-sync first)',true)}}
+async function previewTpl(){try{const r=await api('/api/instructions/template');document.getElementById('tplBox').classList.remove('hidden');document.getElementById('tplPre').textContent=(r.content||'(no template — run #9r-sync)').slice(0,4000)}catch(e){toast(e.message,true)}}
+function clog(m,err){const b=document.getElementById('cmdOut');const d=document.createElement('div');d.className=err?'text-red-600':'text-zinc-700';d.textContent=m;b.appendChild(d);b.scrollTop=b.scrollHeight}
+function clearCmd(){document.getElementById('cmdOut').innerHTML=''}
+async function runCmd(){const el=document.getElementById('cmd'),raw=el.value.trim();if(!raw)return;el.value='';clog('› '+raw);const low=raw.toLowerCase();try{if(low==='help'||low==='?'){clog('add skill NAME [path=PATH] [kw=a,b] · add provider NAME [kw=a,b] · del skill|provider NAME · ask|match TEXT');return}if(low==='clear'){clearCmd();return}if(low.startsWith('key ')){localStorage.setItem('9r-key',raw.slice(4).trim());clog('ok: key saved local only');return}let m;if(m=raw.match(/^ai\s+([\s\S]+)$/i)){const prompt=m[1];if(!localStorage.getItem('9r-key')){clog('err: no key — run: key $KEY first',true);return}clog('…asking');try{const r=await api('/api/ask','POST',{input:prompt});let out=r.output_text||'';if(!out&&Array.isArray(r.output))out=r.output.map(o=>(o.content||[]).map(c=>c.text||'').join('')).join('\n');clog(String(out||JSON.stringify(r).slice(0,2000)).slice(0,4000))}catch(e){clog('err: '+e.message,true)}return}if(m=raw.match(/^add\s+skill\s+(\S+)\s*(.*)$/i)){const name=m[1].toLowerCase(),rest=m[2]||'';const pm=rest.match(/path=(\S+)/i),km=rest.match(/(?:kw|keywords?)=(.*)/i);const path=pm?pm[1].trim():'';let kw=[];if(km)kw=km[1].split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);else{const lo=rest.replace(/path=\S+/gi,'').trim();if(lo)kw=lo.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean)}await api('/api/skills','POST',{name,path,keywords:kw});clog(`ok: skill ${name} +${kw.length} kw`);reload();return}if(m=raw.match(/^add\s+provider\s+(\S+)\s*(.*)$/i)){const name=m[1].toLowerCase(),rest=m[2]||'';const km=rest.match(/(?:kw|keywords?)=(.*)/i);let kw=[];if(km)kw=km[1].split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);else if(rest.trim())kw=rest.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);await api('/api/providers','POST',{name,keywords:kw});clog(`ok: provider ${name} +${kw.length} kw`);reload();return}if(m=raw.match(/^(?:del|rm|delete)\s+(skill|provider)\s+(\S+)\s*$/i)){const kind=m[1].toLowerCase(),name=m[2];await api(`/${'api'}/${kind}s/${encodeURIComponent(name)}`,'DELETE');clog(`ok: deleted ${kind} ${name}`);reload();return}const text=raw.replace(/^(ask|match|ai)\s+/i,'');const r=await api('/api/match','POST',{text});clog(`match → mcp:[${r.providers.join(', ')||'-'}] skills:[${r.skills.join(', ')||'-'}]`);const mt=document.getElementById('mtext');if(mt)mt.value=text;return}catch(e){clog('err: '+e.message,true)}}
+window.addEventListener('keydown',e=>{if(e.key==='/'&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();document.getElementById('q').focus()}if(e.key==='Escape'){document.getElementById('q').value='';render()}});
+reload();
+</script>
+</body>
+</html>

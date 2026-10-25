@@ -1,0 +1,166 @@
+const crypto = require('crypto');
+const http = require('http');
+const https = require('https');
+
+const TARGET = process.env.TARGET_URL || 'http://127.0.0.1:20128';
+const PORT = parseInt(process.env.PORT || '20129', 10);
+
+// Single reusable agent with keep-alive so the proxy reuses its
+// TCP connection to 9router instead of opening a new one per request.
+const targetUrl = new URL(TARGET);
+const agent = targetUrl.protocol === 'https:'
+  ? new https.Agent({ keepAlive: true, maxSockets: 32 })
+  : new http.Agent({ keepAlive: true, maxSockets: 32 });
+const transport = targetUrl.protocol === 'https:' ? https : http;
+
+// Small bounded cache: only GET /v1/models, overwritten every 60s,
+// so memory stays flat at roughly the size of one models list.
+const MODELS_TTL_MS = 60 * 1000;
+let modelsCache = null;
+let modelsCacheAt = 0;
+
+// Short POST dedup: identical body within window returns previous
+// response instead of paying twice on client retry.
+const DEDUP_TTL_MS = parseInt(process.env.DEDUP_TTL_MS || '8000', 10);
+const DEDUP_MAX_ENTRIES = 20;
+const dedupCache = new Map(); // key -> { at, status, headers, body }
+
+function stripUnsupportedFormats(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(stripUnsupportedFormats);
+  const out = {};
+  for (const [key, val] of Object.entries(obj)) {
+    // Drop int32, int64 and unsupported schema formats rejected by Meta API
+    if (key === 'format' && typeof val === 'string' && (val === 'int32' || val === 'int64' || val === 'float' || val === 'double')) {
+      continue;
+    }
+    out[key] = stripUnsupportedFormats(val);
+  }
+  return out;
+}
+
+function logSizes(json, path) {
+  try {
+    const msgs = json.messages || json.input;
+    const tools = json.tools;
+    const parts = [];
+    if (Array.isArray(msgs)) parts.push(`msgs=${msgs.length} msgChars~${JSON.stringify(msgs).length}`);
+    if (Array.isArray(tools)) parts.push(`tools=${tools.length} toolChars~${JSON.stringify(tools).length}`);
+    if (parts.length) console.log(`[sizes] ${path} ${parts.join(' ')}`);
+  } catch (_) {}
+}
+
+function dedupKey(method, path, payload) {
+  return `${method} ${path} ${crypto.createHash('sha256').update(payload).digest('hex')}`;
+}
+
+function pruneDedup(now) {
+  if (dedupCache.size <= DEDUP_MAX_ENTRIES) return;
+  for (const [k, v] of dedupCache) {
+    if (now - v.at > DEDUP_TTL_MS || dedupCache.size <= DEDUP_MAX_ENTRIES) {
+      if (now - v.at > DEDUP_TTL_MS) dedupCache.delete(k);
+    }
+    if (dedupCache.size <= DEDUP_MAX_ENTRIES) break;
+  }
+  if (dedupCache.size > DEDUP_MAX_ENTRIES) {
+    const first = dedupCache.keys().next().value;
+    dedupCache.delete(first);
+  }
+}
+
+const server = http.createServer((req, res) => {
+  const path = req.url.split('?')[0];
+  // Serve the models list from memory when fresh.
+  if (req.method === 'GET' && path === '/v1/models' && modelsCache && Date.now() - modelsCacheAt < MODELS_TTL_MS) {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(modelsCache);
+    return;
+  }
+
+  const upstreamUrl = new URL(req.url, TARGET);
+
+  const chunks = [];
+  req.on('data', chunk => chunks.push(chunk));
+  req.on('end', () => {
+    let payload = Buffer.concat(chunks);
+    const headers = { ...req.headers };
+    delete headers.host;
+
+    const isJsonPost = req.method === 'POST' && req.headers['content-type']?.includes('application/json');
+
+    if (isJsonPost && payload.length > 0) {
+      // Short dedup on identical POST bodies (client retries).
+      const key = dedupKey(req.method, path, payload);
+      const hit = dedupCache.get(key);
+      if (hit && Date.now() - hit.at < DEDUP_TTL_MS) {
+        console.log(`[dedup] hit ${path}`);
+        res.writeHead(hit.status, hit.headers);
+        res.end(hit.body);
+        return;
+      }
+
+      // Fast path: only parse JSON when a "format" key might be present.
+      // ponytail: no message trimming here; full context passes through.
+      if (payload.includes('"format"')) {
+        try {
+          const json = JSON.parse(payload.toString('utf8'));
+          logSizes(json, path);
+          const cleaned = stripUnsupportedFormats(json);
+          payload = Buffer.from(JSON.stringify(cleaned), 'utf8');
+          headers['content-length'] = payload.length;
+        } catch (_) {}
+      } else {
+        try { logSizes(JSON.parse(payload.toString('utf8')), path); } catch (_) {}
+      }
+    }
+
+    const proxyReq = transport.request(upstreamUrl, {
+      method: req.method,
+      headers: headers,
+      agent: agent,
+    }, proxyRes => {
+      // Refresh the models cache from successful upstream responses.
+      if (req.method === 'GET' && path === '/v1/models' && proxyRes.statusCode === 200) {
+        const body = [];
+        proxyRes.on('data', c => body.push(c));
+        proxyRes.on('end', () => {
+          modelsCache = Buffer.concat(body);
+          modelsCacheAt = Date.now();
+          res.writeHead(proxyRes.statusCode, proxyRes.headers);
+          res.end(modelsCache);
+        });
+        return;
+      }
+      // Buffer POST responses so identical retries can reuse them.
+      if (isJsonPost && proxyRes.statusCode === 200) {
+        const body = [];
+        proxyRes.on('data', c => body.push(c));
+        proxyRes.on('end', () => {
+          const buf = Buffer.concat(body);
+          const key = dedupKey(req.method, path, payload);
+          const safeHeaders = { ...proxyRes.headers };
+          delete safeHeaders['content-length'];
+          safeHeaders['content-length'] = buf.length;
+          dedupCache.set(key, { at: Date.now(), status: proxyRes.statusCode, headers: safeHeaders, body: buf });
+          pruneDedup(Date.now());
+          res.writeHead(proxyRes.statusCode, proxyRes.headers);
+          res.end(buf);
+        });
+        return;
+      }
+      res.writeHead(proxyRes.statusCode, proxyRes.headers);
+      proxyRes.pipe(res);
+    });
+
+    proxyReq.on('error', err => {
+      res.writeHead(502, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    });
+
+    proxyReq.end(payload);
+  });
+});
+
+server.listen(PORT, '127.0.0.1', () => {
+  console.log(`[9router Proxy] Listening on http://127.0.0.1:${PORT} -> ${TARGET}`);
+});

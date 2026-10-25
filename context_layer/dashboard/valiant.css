@@ -1,0 +1,73 @@
+:root {
+  --bg: #FDF7FA;
+  --bg-card: #FFFFFF;
+  --bg-subtle: #FAF0F5;
+  --border: #F3D9E6;
+  --border-strong: #E5B6D0;
+  --text-main: #3B1C32;
+  --text-muted: #8E5A7A;
+  --rose-primary: #BE185D;
+  --rose-hover: #9D174D;
+  --rose-soft: #FCE7F3;
+  --lavender: #DDD6FE;
+  --lavender-soft: #F5F3FF;
+  --mint: #D1FAE5;
+  --peach: #FFEDD5;
+  --hair: #F3D9E6;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.card:hover {
+  border-color: var(--border-strong);
+}
+
+.hair { border-color: var(--hair) !important; }
+
+.custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+.custom-scroll::-webkit-scrollbar-thumb { background: #E5B6D0; border-radius: 99px; }
+
+dialog::backdrop { background: rgba(59, 28, 50, 0.4); }
+summary::-webkit-details-marker { display: none; }
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--rose-primary) !important;
+}
+
+.btn-valiant-rose {
+  background: var(--rose-primary);
+  color: #FFF;
+}
+.btn-valiant-rose:hover {
+  background: var(--rose-hover);
+}
+
+.valiant-nav-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 13px;
+  border-radius: 8px;
+  padding: 8px 14px;
+  transition: all 120ms ease;
+}
+.valiant-nav-link:hover {
+  color: var(--text-main);
+  background: var(--bg-subtle);
+}
+.valiant-nav-link.active {
+  background: var(--rose-primary);
+  color: #FFF;
+  font-weight: 600;
+}

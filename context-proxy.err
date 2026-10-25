@@ -1,0 +1,244 @@
+/Users/accountmac/.config/9router-proxy/context-proxy.js:799
+      let buf = await collect(upRes);
+                ^
+
+ReferenceError: collect is not defined
+    at ClientRequest.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:799:17)
+    at ClientRequest.wrapper (node:events:639:12)
+    at ClientRequest.emit (node:events:514:20)
+    at HTTPParser.parserOnIncomingClient [as onIncoming] (node:_http_client:973:27)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:125:17)
+    at Socket.socketOnData (node:_http_client:808:22)
+    at Socket.emit (node:events:514:20)
+    at addChunk (node:internal/streams/readable:568:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:519:3)
+    at Readable.push (node:internal/streams/readable:399:5)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:799
+      let buf = await collect(upRes);
+                ^
+
+ReferenceError: collect is not defined
+    at ClientRequest.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:799:17)
+    at ClientRequest.wrapper (node:events:639:12)
+    at ClientRequest.emit (node:events:514:20)
+    at HTTPParser.parserOnIncomingClient [as onIncoming] (node:_http_client:973:27)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:125:17)
+    at Socket.socketOnData (node:_http_client:808:22)
+    at Socket.emit (node:events:514:20)
+    at addChunk (node:internal/streams/readable:568:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:519:3)
+    at Readable.push (node:internal/streams/readable:399:5)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:799
+      let buf = await collect(upRes);
+                ^
+
+ReferenceError: collect is not defined
+    at ClientRequest.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:799:17)
+    at ClientRequest.wrapper (node:events:639:12)
+    at ClientRequest.emit (node:events:514:20)
+    at HTTPParser.parserOnIncomingClient [as onIncoming] (node:_http_client:973:27)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:125:17)
+    at Socket.socketOnData (node:_http_client:808:22)
+    at Socket.emit (node:events:514:20)
+    at addChunk (node:internal/streams/readable:568:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:519:3)
+    at Readable.push (node:internal/streams/readable:399:5)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:799
+      let buf = await collect(upRes);
+                ^
+
+ReferenceError: collect is not defined
+    at ClientRequest.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:799:17)
+    at ClientRequest.wrapper (node:events:639:12)
+    at ClientRequest.emit (node:events:514:20)
+    at HTTPParser.parserOnIncomingClient [as onIncoming] (node:_http_client:973:27)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:125:17)
+    at Socket.socketOnData (node:_http_client:808:22)
+    at Socket.emit (node:events:514:20)
+    at addChunk (node:internal/streams/readable:568:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:519:3)
+    at Readable.push (node:internal/streams/readable:399:5)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:839
+      const u = usageFromSseTail(tail);
+                ^
+
+ReferenceError: usageFromSseTail is not defined
+    at IncomingMessage.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:839:17)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1772:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:839
+      const u = usageFromSseTail(tail);
+                ^
+
+ReferenceError: usageFromSseTail is not defined
+    at IncomingMessage.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:839:17)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1772:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:839
+      const u = usageFromSseTail(tail);
+                ^
+
+ReferenceError: usageFromSseTail is not defined
+    at IncomingMessage.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:839:17)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1772:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:839
+      const u = usageFromSseTail(tail);
+                ^
+
+ReferenceError: usageFromSseTail is not defined
+    at IncomingMessage.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:839:17)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1772:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:839
+      const u = usageFromSseTail(tail);
+                ^
+
+ReferenceError: usageFromSseTail is not defined
+    at IncomingMessage.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:839:17)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1772:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:839
+      const u = usageFromSseTail(tail);
+                ^
+
+ReferenceError: usageFromSseTail is not defined
+    at IncomingMessage.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:839:17)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1772:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:839
+      const u = usageFromSseTail(tail);
+                ^
+
+ReferenceError: usageFromSseTail is not defined
+    at IncomingMessage.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:839:17)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1772:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:839
+      const u = usageFromSseTail(tail);
+                ^
+
+ReferenceError: usageFromSseTail is not defined
+    at IncomingMessage.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:839:17)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1772:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:839
+      const u = usageFromSseTail(tail);
+                ^
+
+ReferenceError: usageFromSseTail is not defined
+    at IncomingMessage.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:839:17)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1772:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:839
+      const u = usageFromSseTail(tail);
+                ^
+
+ReferenceError: usageFromSseTail is not defined
+    at IncomingMessage.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:839:17)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1772:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:839
+      const u = usageFromSseTail(tail);
+                ^
+
+ReferenceError: usageFromSseTail is not defined
+    at IncomingMessage.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:839:17)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1772:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:839
+      const u = usageFromSseTail(tail);
+                ^
+
+ReferenceError: usageFromSseTail is not defined
+    at IncomingMessage.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:839:17)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1772:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:839
+      const u = usageFromSseTail(tail);
+                ^
+
+ReferenceError: usageFromSseTail is not defined
+    at IncomingMessage.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:839:17)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1772:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:839
+      const u = usageFromSseTail(tail);
+                ^
+
+ReferenceError: usageFromSseTail is not defined
+    at IncomingMessage.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:839:17)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1772:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:839
+      const u = usageFromSseTail(tail);
+                ^
+
+ReferenceError: usageFromSseTail is not defined
+    at IncomingMessage.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:839:17)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1772:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v26.7.0
+/Users/accountmac/.config/9router-proxy/context-proxy.js:839
+      const u = usageFromSseTail(tail);
+                ^
+
+ReferenceError: usageFromSseTail is not defined
+    at IncomingMessage.<anonymous> (/Users/accountmac/.config/9router-proxy/context-proxy.js:839:17)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1772:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v26.7.0

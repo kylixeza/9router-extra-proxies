@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>9Router Proxy Connection Layer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['"JetBrains Mono"','monospace']}}}}</script>
+<style>
+body{background:#F7F7F5;color:#18181b;-webkit-font-smoothing:antialiased}
+.card{background:#fff;border:1px solid #e4e4e7;border-radius:12px}
+.hair{border-color:#e4e4e7}
+.custom-scroll::-webkit-scrollbar{width:4px;height:4px}
+.custom-scroll::-webkit-scrollbar-thumb{background:#d4d4d8;border-radius:99px}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+.mono{font-family:"JetBrains Mono",monospace}
+</style>
+</head>
+<body class="min-h-screen font-sans text-sm flex flex-col">
+<header class="sticky top-0 z-30 bg-[#F7F7F5]/85 backdrop-blur border-b hair">
+<div class="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-7 h-7 rounded-md bg-zinc-900 text-white flex items-center justify-center text-xs font-bold">9r</div>
+<div class="flex items-center gap-2">
+<span class="font-semibold tracking-tight whitespace-nowrap">9Router Proxy Connection Layer</span>
+<span id="hbadge" class="text-[11px] font-mono text-zinc-500 border hair rounded-full px-2 py-0.5 bg-white flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-zinc-300"></span>conn · :20129</span>
+</div>
+</div>
+<div class="flex items-center gap-2 text-xs font-mono text-zinc-500">
+<span id="hup" class="hidden md:inline">up -</span>
+<button onclick="reload()" class="w-8 h-8 rounded-lg bg-white border hair flex items-center justify-center hover:border-zinc-400" title="Reload"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i></button>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-6xl w-full mx-auto px-5 py-6">
+<div id="cards" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3"></div>
+
+<!-- Graphic Usage & Timeframe Section -->
+<section class="card mt-3 p-4">
+<div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+<div>
+  <h2 class="font-semibold tracking-tight text-sm">Graphic Usage Analytics</h2>
+  <p class="text-[11px] font-mono text-zinc-400">breakdown by provider, model, project · tok/sec speed · runaway meter</p>
+</div>
+<div class="flex items-center gap-1.5 bg-[#F7F7F5] border hair p-0.5 rounded-lg text-xs font-mono">
+  <button id="tf-today" onclick="setTimeframe('today')" class="px-2.5 py-1 rounded-md text-zinc-600 hover:text-zinc-900">Today</button>
+  <button id="tf-7d" onclick="setTimeframe('7d')" class="px-2.5 py-1 rounded-md text-zinc-600 hover:text-zinc-900">7 Days</button>
+  <button id="tf-30d" onclick="setTimeframe('30d')" class="px-2.5 py-1 rounded-md text-zinc-600 hover:text-zinc-900">30 Days</button>
+  <button id="tf-all" onclick="setTimeframe('all')" class="px-2.5 py-1 rounded-md bg-white shadow-sm font-semibold text-zinc-900">All Time</button>
+</div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+  <!-- Provider Graphic Breakdown -->
+  <div class="border hair rounded-lg p-3 bg-[#FAFAF9]">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-semibold text-zinc-700">Provider Share</span>
+      <span id="u-prov-total" class="text-[11px] font-mono text-zinc-400">-</span>
+    </div>
+    <div id="u-prov-bar" class="h-3 w-full bg-zinc-200 rounded-full flex overflow-hidden mb-3"></div>
+    <div id="u-prov-list" class="space-y-1.5 text-xs font-mono text-zinc-700"></div>
+  </div>
+
+  <!-- Model Graphic Breakdown -->
+  <div class="border hair rounded-lg p-3 bg-[#FAFAF9]">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-semibold text-zinc-700">Top Models</span>
+      <span id="u-model-total" class="text-[11px] font-mono text-zinc-400">-</span>
+    </div>
+    <div id="u-model-list" class="space-y-2 text-xs font-mono text-zinc-700"></div>
+  </div>
+
+  <!-- Project Breakdown & Runaway 24h Gauge -->
+  <div class="border hair rounded-lg p-3 bg-[#FAFAF9]">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-semibold text-zinc-700">Project Allocation & 24h Meter</span>
+      <span id="u-proj-total" class="text-[11px] font-mono text-zinc-400">-</span>
+    </div>
+    <div id="u-proj-list" class="space-y-2 text-xs font-mono text-zinc-700 mb-3"></div>
+    <div class="pt-2 border-t hair">
+      <div class="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">24h Runaway Meter</div>
+      <div id="u-runaway-list" class="space-y-1 text-xs font-mono"></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
+<section class="card p-4">
+<h2 class="font-semibold tracking-tight mb-1">Traffic</h2>
+<p class="text-[11px] font-mono text-zinc-400 mb-3">GET /stats polled 2s</p>
+<div id="traffic" class="text-xs font-mono text-zinc-600">-</div>
+</section>
+<section class="card p-4">
+<h2 class="font-semibold tracking-tight mb-1">Resilience & Speed</h2>
+<p class="text-[11px] font-mono text-zinc-400 mb-3">retries · fallback · dedup · generation speed</p>
+<div id="resil" class="text-xs font-mono text-zinc-600">-</div>
+</section>
+</div>
+<section class="card mt-3 p-4 overflow-hidden">
+<h2 class="font-semibold tracking-tight mb-3">Models</h2>
+<div class="overflow-x-auto"><table class="w-full text-xs">
+<thead><tr class="text-left font-mono text-zinc-400 border-b hair">
+<th class="py-1 pr-3 font-medium">model</th><th class="py-1 pr-3 font-medium text-right">req</th>
+<th class="py-1 pr-3 font-medium text-right">prompt</th><th class="py-1 pr-3 font-medium text-right">compl</th>
+<th class="py-1 font-medium text-right">avg ms</th></tr></thead>
+<tbody id="models" class="font-mono text-zinc-700"></tbody>
+</table></div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
+<section class="card p-4">
+<h2 class="font-semibold tracking-tight mb-3">Config <span class="text-[11px] font-normal text-zinc-400">read-only</span></h2>
+<div id="cfg" class="text-[11px] font-mono text-zinc-600 whitespace-pre-wrap break-all custom-scroll max-h-64 overflow-y-auto">-</div>
+</section>
+<section class="card p-4">
+<h2 class="font-semibold tracking-tight mb-1">Models cache</h2>
+<div id="mc" class="text-xs font-mono text-zinc-600">-</div>
+</section>
+</div>
+<section class="card mt-3 overflow-hidden">
+<div class="px-4 py-2.5 border-b hair flex items-center justify-between">
+<div class="text-xs font-medium">logs <span id="lsrc" class="font-mono text-zinc-400"></span></div>
+<div class="flex items-center gap-2 flex-wrap justify-end">
+<select id="proj" onchange="page=1;reloadLogs()" class="h-8 px-2 rounded-md bg-[#F7F7F5] border hair text-xs max-w-[160px]"><option value="">all projects</option></select>
+<input id="dfrom" type="date" onchange="page=1;reloadLogs()" class="h-8 px-2 rounded-md bg-[#F7F7F5] border hair text-xs">
+<span class="text-xs text-zinc-400">–</span>
+<input id="dto" type="date" onchange="page=1;reloadLogs()" class="h-8 px-2 rounded-md bg-[#F7F7F5] border hair text-xs">
+<input id="q" oninput="page=1;debouncedLogs()" placeholder="filter id, model, path, status…" class="h-8 w-48 px-2 rounded-md bg-[#F7F7F5] border hair text-xs">
+<button onclick="clearFilters()" title="clear filters" class="h-8 px-2.5 rounded-lg border hair text-xs hover:border-zinc-400">✕</button>
+<button id="bmToggle" onclick="toggleBookmarkFilter()" title="show bookmarked only" class="h-8 px-2.5 rounded-lg border hair text-xs hover:border-zinc-400">☆</button>
+<button onclick="page=1;reloadLogs()" class="h-8 px-3 rounded-lg border hair text-xs hover:border-zinc-400">Reload</button>
+</div>
+</div>
+<div class="overflow-x-auto"><table class="w-full text-xs">
+<thead><tr class="text-left font-mono text-zinc-400 border-b hair">
+<th class="py-1.5 pl-4 pr-1 font-medium">★</th><th class="py-1.5 px-1 font-medium">id</th><th class="py-1.5 pr-3 font-medium">date ↓</th>
+<th class="py-1.5 pr-3 font-medium">project</th><th class="py-1.5 pr-3 font-medium">method path</th><th class="py-1.5 pr-3 font-medium">provider / model</th>
+<th class="py-1.5 pr-3 font-medium text-right">status</th><th class="py-1.5 pr-3 font-medium text-right">ms</th>
+<th class="py-1.5 px-4 font-medium text-right">tok (actual / est)</th></tr></thead>
+<tbody id="logs" class="font-mono text-zinc-700"></tbody>
+</table></div>
+<div class="px-4 py-2 border-t hair flex items-center justify-between text-xs font-mono text-zinc-500">
+<div id="pginfo">-</div>
+<div class="flex items-center gap-1.5">
+<button onclick="prevPage()" class="h-7 px-2.5 rounded-md border hair hover:border-zinc-400">‹ Prev</button>
+<select id="ps" onchange="page=1;reloadLogs()" class="h-7 px-1 rounded-md bg-[#F7F7F5] border hair"><option>20</option><option selected>50</option><option>100</option></select>
+<button onclick="nextPage()" class="h-7 px-2.5 rounded-md border hair hover:border-zinc-400">Next ›</button>
+</div>
+</div>
+</section>
+<p class="mt-8 text-[11px] font-mono text-zinc-400">poll-only, no charts. data from /api/conn/index + /api/conn/logs.</p>
+</main>
+<dialog id="dlg" class="rounded-xl p-0 border hair text-zinc-900 max-w-3xl w-full"><div class="p-5">
+<div class="flex items-center justify-between mb-3"><h3 id="dt" class="font-semibold tracking-tight font-mono text-sm">req</h3>
+<div class="flex items-center gap-2"><button onclick="toggleDlgBookmark()" id="dlgBmBtn" class="h-8 px-3 rounded-lg border hair text-xs hover:border-zinc-400">☆ Bookmark</button><button onclick="copyLog()" class="h-8 px-3 rounded-lg border hair text-xs hover:border-zinc-400">Copy</button><button onclick="this.closest('dialog').close()" class="h-8 px-3 text-xs text-zinc-500">Close</button></div></div>
+<div class="flex items-center gap-2 mb-3"><input id="bmNote" placeholder="bookmark note (optional, 500 chars)…" maxlength="500" class="h-8 flex-1 px-2 rounded-md bg-[#F7F7F5] border hair text-xs"><button onclick="saveBookmarkNote()" class="h-8 px-3 rounded-lg border hair text-xs hover:border-zinc-400">Save note</button></div>
+<pre id="db" class="mono text-[11px] bg-[#F7F7F5] border hair rounded-lg p-3 max-h-[60vh] overflow-auto custom-scroll whitespace-pre-wrap break-all"></pre>
+</div></dialog>
+<div id="toast" class="fixed right-4 bottom-4 z-50 flex flex-col gap-2"></div>
+<script>
+let S=null,USAGE=null,LOGS=[],page=1,total=0,debT=null,currentTimeframe='all',showBookmarked=false,curBmId=null,curBmState=false;
+const PROVIDER_COLORS = {
+  ms: '#3b82f6', muse: '#3b82f6',
+  kr: '#a855f7', claude: '#a855f7',
+  ag: '#f59e0b', gemini: '#f59e0b',
+  direct: '#71717a'
+};
+function provColor(p){ return PROVIDER_COLORS[(p||'').toLowerCase()] || '#10b981'; }
+
+function setTimeframe(tf){
+  currentTimeframe = tf;
+  ['today','7d','30d','all'].forEach(k=>{
+    const b = document.getElementById('tf-'+k);
+    if(b){
+      if(k===tf){ b.className='px-2.5 py-1 rounded-md bg-white shadow-sm font-semibold text-zinc-900'; }
+      else { b.className='px-2.5 py-1 rounded-md text-zinc-600 hover:text-zinc-900'; }
+    }
+  });
+  reloadUsage();
+}
+
+function debouncedLogs(){clearTimeout(debT);debT=setTimeout(()=>reloadLogs(),300)}
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function toast(m,e=false){const b=document.getElementById('toast'),d=document.createElement('div');d.className='px-3 py-2 rounded-lg text-xs font-medium shadow-lg '+(e?'bg-red-600 text-white':'bg-zinc-900 text-white');d.textContent=m;b.appendChild(d);setTimeout(()=>d.remove(),2400)}
+function num(n){return Number(n||0).toLocaleString('en-US')}
+function fmtTok(n){const v=Number(n||0); if(v>=1e6) return (v/1e6).toFixed(1)+'M'; if(v>=1e3) return (v/1e3).toFixed(1)+'k'; return String(v);}
+function card(l,v){return `<div class="card p-3"><div class="text-[11px] font-mono text-zinc-400">${l}</div><div class="text-lg font-semibold tracking-tight font-mono">${v}</div></div>`}
+function fmtDate(iso){if(!iso)return '-';const d=new Date(iso);if(isNaN(d))return String(iso).slice(0,16).replace('T',' ');const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`}
+
+async function reload(){try{const r=await fetch('/api/conn/index');S=await r.json();render()}catch(e){toast(e.message,true)}}
+async function reloadUsage(){
+  try{
+    const proj=document.getElementById('proj')?.value||'';
+    const r=await fetch(`/api/conn/usage?timeframe=${currentTimeframe}&project=${encodeURIComponent(proj)}`);
+    USAGE=await r.json();
+    renderUsage();
+  }catch(e){console.error(e);}
+}
+async function reloadLogs(){try{const ps=document.getElementById('ps')?.value||'50';const q=document.getElementById('q').value||'';const proj=document.getElementById('proj')?.value||'';const from=document.getElementById('dfrom')?.value||'';const to=document.getElementById('dto')?.value||'';const r=await fetch(`/api/conn/logs?page=${page}&pageSize=${ps}&q=${encodeURIComponent(q)}&project=${encodeURIComponent(proj)}&from=${from}&to=${to}${showBookmarked?'&bookmarked=1':''}`);const j=await r.json();LOGS=j.logs||[];total=j.total||0;page=j.page||page;document.getElementById('lsrc').textContent='· '+j.source+' · '+num(total)+' total · latest first';renderLogs()}catch(e){toast(e.message,true)}}
+function toggleBookmarkFilter(){showBookmarked=!showBookmarked;page=1;const b=document.getElementById('bmToggle');if(b){b.textContent=showBookmarked?'★':'☆';b.className='h-8 px-2.5 rounded-lg border hair text-xs hover:border-zinc-400'+(showBookmarked?' bg-amber-100 border-amber-300 font-bold':'');}reloadLogs();}
+function clearFilters(){document.getElementById('q').value='';document.getElementById('proj').value='';document.getElementById('dfrom').value='';document.getElementById('dto').value='';if(showBookmarked)toggleBookmarkFilterSilent();page=1;reloadLogs();reloadUsage();}
+function toggleBookmarkFilterSilent(){showBookmarked=false;const b=document.getElementById('bmToggle');if(b){b.textContent='☆';b.className='h-8 px-2.5 rounded-lg border hair text-xs hover:border-zinc-400';}}
+async function reloadProjects(){try{const r=await fetch('/api/conn/projects');const j=await r.json();const sel=document.getElementById('proj');const cur=sel.value;sel.innerHTML='<option value="">all projects</option>'+(j.projects||[]).map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');if(cur)sel.value=cur}catch(_){}}
+function prevPage(){if(page>1){page--;reloadLogs()}}
+function nextPage(){const ps=parseInt(document.getElementById('ps')?.value||'50',10);if(page*ps<total){page++;reloadLogs()}}
+
+function renderUsage(){
+  if(!USAGE) return;
+  const provs = USAGE.providers || [];
+  const models = USAGE.models || [];
+  const projects = USAGE.projects || [];
+  const runaway = USAGE.runaway24h || [];
+
+  const totalTok = provs.reduce((acc, p) => acc + Number(p.est_total_tokens || 0), 0);
+  document.getElementById('u-prov-total').textContent = fmtTok(totalTok) + ' tok';
+
+  // Provider stacked bar & list
+  if (totalTok > 0 && provs.length) {
+    document.getElementById('u-prov-bar').innerHTML = provs.map(p => {
+      const pct = Math.max(1, Math.round((Number(p.est_total_tokens || 0) / totalTok) * 100));
+      return `<div style="width:${pct}%; background:${provColor(p.provider)}" title="${esc(p.provider)}: ${pct}% (${fmtTok(p.est_total_tokens)})"></div>`;
+    }).join('');
+  } else {
+    document.getElementById('u-prov-bar').innerHTML = '<div class="w-full bg-zinc-200"></div>';
+  }
+
+  document.getElementById('u-prov-list').innerHTML = provs.length ? provs.map(p => {
+    const pct = totalTok ? ((Number(p.est_total_tokens || 0) / totalTok) * 100).toFixed(1) : 0;
+    const speed = p.tokens_per_sec > 0 ? `· <span class="text-emerald-600 font-medium">${p.tokens_per_sec} tok/s</span>` : '';
+    return `<div class="flex items-center justify-between py-0.5">
+      <div class="flex items-center gap-1.5 truncate">
+        <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${provColor(p.provider)}"></span>
+        <span class="font-semibold">${esc(p.provider)}</span>
+        <span class="text-[11px] text-zinc-400">(${num(p.requests)} req ${speed})</span>
+      </div>
+      <div class="text-right whitespace-nowrap"><span class="font-semibold">${fmtTok(p.est_total_tokens)}</span> <span class="text-[11px] text-zinc-400">${pct}%</span></div>
+    </div>`;
+  }).join('') : '<div class="text-zinc-400">no provider data</div>';
+
+  // Model breakdown
+  const maxModelTok = models.reduce((m, x) => Math.max(m, Number(x.est_total_tokens || 0)), 1);
+  document.getElementById('u-model-total').textContent = `${models.length} active`;
+  document.getElementById('u-model-list').innerHTML = models.length ? models.slice(0, 5).map(m => {
+    const t = Number(m.est_total_tokens || 0);
+    const pct = Math.min(100, Math.round((t / maxModelTok) * 100));
+    return `<div>
+      <div class="flex items-center justify-between text-[11px] mb-0.5">
+        <span class="truncate font-semibold max-w-[160px]" title="${esc(m.model)}">${esc(m.model)}</span>
+        <span>${fmtTok(t)}</span>
+      </div>
+      <div class="h-1.5 w-full bg-zinc-200 rounded-full overflow-hidden">
+        <div class="h-full rounded-full" style="width:${pct}%; background:${provColor(m.provider)}"></div>
+      </div>
+    </div>`;
+  }).join('') : '<div class="text-zinc-400">no model data</div>';
+
+  // Project breakdown
+  const maxProjTok = projects.reduce((m, x) => Math.max(m, Number(x.est_total_tokens || 0)), 1);
+  document.getElementById('u-proj-total').textContent = `${projects.length} projects`;
+  document.getElementById('u-proj-list').innerHTML = projects.length ? projects.slice(0, 4).map(pr => {
+    const t = Number(pr.est_total_tokens || 0);
+    const pct = Math.min(100, Math.round((t / maxProjTok) * 100));
+    return `<div>
+      <div class="flex items-center justify-between text-[11px] mb-0.5">
+        <span class="truncate font-semibold max-w-[150px]">${esc(pr.project_name)}</span>
+        <span>${fmtTok(t)}</span>
+      </div>
+      <div class="h-1.5 w-full bg-zinc-200 rounded-full overflow-hidden">
+        <div class="h-full bg-zinc-800 rounded-full" style="width:${pct}%"></div>
+      </div>
+    </div>`;
+  }).join('') : '<div class="text-zinc-400">no project data</div>';
+
+  // 24h runaway meter
+  document.getElementById('u-runaway-list').innerHTML = runaway.length ? runaway.slice(0, 3).map(r => {
+    const t = Number(r.tokens_24h || 0);
+    const runawayAlert = t > 5000000 ? '<span class="px-1.5 py-0.2 rounded bg-red-100 text-red-700 text-[10px] font-bold">⚠️ RUNAWAY</span>' : '';
+    return `<div class="flex items-center justify-between py-0.5">
+      <span class="truncate max-w-[140px] text-zinc-600">${esc(r.project_name)} ${runawayAlert}</span>
+      <span class="font-medium text-zinc-800">${fmtTok(t)} / 24h</span>
+    </div>`;
+  }).join('') : '<div class="text-zinc-400">no 24h traffic</div>';
+}
+
+function render(){
+if(!S)return;
+const s=S.stats,h=S.health;
+document.getElementById('hup').textContent='up '+num(h.uptimeSec)+'s · :'+(S.config.port||20129)+' → '+esc(S.config.target||'');
+document.getElementById('hbadge').innerHTML='<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>conn · :'+(S.config.port||20129);
+const by=s.byStatus||{};
+const ok=(by['200']||0);
+document.getElementById('cards').innerHTML=
+card('requests',num(s.requests))+card('ok 200',num(ok))+
+card('upstream err',num(s.upstreamErrors))+card('client abort',num(s.clientAborts))+
+card('retries',num(s.retries))+card('fallbacks',num(s.fallbacks));
+const tot=s.requests||1;
+document.getElementById('traffic').innerHTML=
+`byStatus: ${Object.entries(by).map(([k,v])=>`${k}=${v}`).join(' ')||'-'}<br>err rate: ${((s.upstreamErrors+s.clientAborts)/tot*100).toFixed(1)}%<br>started: ${esc(s.startedAt||'-')}`;
+document.getElementById('resil').innerHTML=
+`retries=${num(s.retries)} fallbacks=${num(s.fallbacks)}<br>dedupHits=${num(s.dedupHits)} coalesced=${num(s.coalesced)}<br>inflight=${num(s.inflight)} dedupEntries=${num(s.dedupEntries)}<br>dedup ttl=${num(S.config.dedupTtlMs)}ms max=${num(S.config.dedupMax)}${S.config.dedupDeterministicOnly?' det-only':''}`;
+document.getElementById('models').innerHTML=(S.models||[]).length?(S.models||[]).map(m=>
+`<tr class="border-b hair last:border-0"><td class="py-1.5 pr-3 truncate max-w-[220px]">${esc(m.name)}</td><td class="py-1.5 pr-3 text-right">${num(m.requests)}</td><td class="py-1.5 pr-3 text-right">${num(m.promptTokens)}</td><td class="py-1.5 pr-3 text-right">${num(m.completionTokens)}</td><td class="py-1.5 text-right">${num(m.avgMs)}</td></tr>`).join(''):'<tr><td class="py-4 text-zinc-400">no model stats yet</td></tr>';
+const c=S.config;
+document.getElementById('cfg').textContent=
+`target ${c.target}\nretries ${c.retries} ttfb ${c.ttfbMs}ms modelsTtl ${c.modelsTtlMs}ms\nlogBodies ${c.logBodies} logKeep ${c.logKeep}\naliases ${JSON.stringify(c.aliases||{})}\nfallbacks ${JSON.stringify(c.fallbacks||{})}\ndefaults ${JSON.stringify(c.defaults||{})}\ndropParams ${JSON.stringify(c.dropParams||{})}`;
+const mc=S.modelsCache||{};
+document.getElementById('mc').textContent=mc.cached?`cached yes · age ${mc.ageMs}ms / ttl ${mc.ttlMs}ms · refreshing=${mc.refreshing} · models=${mc.modelCount??'-'}`:'not cached yet · hit /v1/models once';
+lucide.createIcons()}
+
+function renderLogs(){
+const rows=LOGS;
+document.getElementById('logs').innerHTML=rows.length?rows.map(l=>{
+  const prov = l.provider || (l.model && l.model.includes('/') ? l.model.split('/')[0] : 'direct');
+  const provBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold text-white mr-1" style="background:${provColor(prov)}">${esc(prov)}</span>`;
+  let tokHtml = '-';
+  if (l.prompt_tokens || l.completion_tokens) {
+    tokHtml = `<span class="text-zinc-900 font-medium">${fmtTok(l.prompt_tokens)}</span>/<span class="text-zinc-600">${fmtTok(l.completion_tokens)}</span>`;
+  } else if (l.est_prompt_tokens) {
+    tokHtml = `<span class="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 text-[10px] font-medium border hair" title="Estimated">~${fmtTok(l.est_prompt_tokens)} est</span>`;
+  }
+  return `<tr class="border-b hair last:border-0 hover:bg-[#FAFAF9] cursor-pointer" onclick="inspect('${esc(l.id)}')">
+    <td class="py-1.5 pl-4 pr-1"><button onclick="toggleBookmark(event,'${esc(l.id)}',${!!l.bookmarked})" title="${l.bookmarked?'unbookmark':'bookmark'}${esc(l.bookmark_note?' · '+l.bookmark_note:'')}" class="text-sm leading-none ${l.bookmarked?'text-amber-500':'text-zinc-300 hover:text-amber-400'}">${l.bookmarked?'★':'☆'}</button></td>
+    <td class="py-1.5 px-1 text-zinc-900">${esc(l.id||'').slice(0,10)}</td>
+    <td class="py-1.5 pr-3 text-zinc-500 whitespace-nowrap">${esc(fmtDate(l.created_at))}</td>
+    <td class="py-1.5 pr-3 truncate max-w-[140px]">${esc(l.project_name||'-')}</td>
+    <td class="py-1.5 pr-3 truncate max-w-[220px]">${esc(l.method||'')} ${esc(l.path||'')}</td>
+    <td class="py-1.5 pr-3 truncate max-w-[200px] flex items-center">${provBadge}<span class="truncate">${esc(l.model||'-')}</span></td>
+    <td class="py-1.5 pr-3 text-right">${l.status??'-'}</td>
+    <td class="py-1.5 pr-3 text-right">${l.ms??'-'}</td>
+    <td class="py-1.5 px-4 text-right">${tokHtml}</td>
+  </tr>`;
+}).join(''):'<tr><td class="py-4 px-4 text-zinc-400" colspan="9">no logs</td></tr>';
+const ps=parseInt(document.getElementById('ps')?.value||'50',10);const pages=Math.max(1,Math.ceil(total/ps));document.getElementById('pginfo').textContent=`page ${page}/${pages} · ${LOGS.length} rows`;}
+
+async function inspect(id){try{const r=await fetch('/api/conn/logs/'+encodeURIComponent(id));const j=await r.json();const log=j.log||{};const bm=log.bookmarked??log.meta?.bookmarked??false;const note=log.bookmark_note??log.bookmarkNote??log.note??'';curBmId=id;curBmState=!!bm;const btn=document.getElementById('dlgBmBtn');if(btn)btn.textContent=curBmState?'★ Bookmarked':'☆ Bookmark';const ni=document.getElementById('bmNote');if(ni)ni.value=note||'';const t=JSON.stringify(log,null,2);document.getElementById('dt').textContent='req '+id+' · '+j.source+' · '+num(t.length)+' chars';document.getElementById('db').textContent=t;document.getElementById('dlg').showModal()}catch(e){toast(e.message,true)}}
+async function toggleBookmark(ev,id,cur){ev.stopPropagation();try{const r=await fetch('/api/conn/logs/'+encodeURIComponent(id)+'/bookmark',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({bookmarked:!cur})});const j=await r.json();if(!r.ok)throw new Error(j.error||('HTTP '+r.status));toast(j.bookmarked?'bookmarked':'unbookmarked');reloadLogs()}catch(e){toast(e.message,true)}}
+async function toggleDlgBookmark(){if(!curBmId)return;try{const r=await fetch('/api/conn/logs/'+encodeURIComponent(curBmId)+'/bookmark',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({bookmarked:!curBmState,note:document.getElementById('bmNote')?.value||''})});const j=await r.json();if(!r.ok)throw new Error(j.error||('HTTP '+r.status));curBmState=!!j.bookmarked;const btn=document.getElementById('dlgBmBtn');if(btn)btn.textContent=curBmState?'★ Bookmarked':'☆ Bookmark';toast(curBmState?'bookmarked':'unbookmarked');reloadLogs()}catch(e){toast(e.message,true)}}
+async function saveBookmarkNote(){if(!curBmId)return toast('open a log first',true);try{const r=await fetch('/api/conn/logs/'+encodeURIComponent(curBmId)+'/bookmark',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({bookmarked:true,note:document.getElementById('bmNote')?.value||''})});const j=await r.json();if(!r.ok)throw new Error(j.error||('HTTP '+r.status));curBmState=true;const btn=document.getElementById('dlgBmBtn');if(btn)btn.textContent='★ Bookmarked';toast('note saved');reloadLogs()}catch(e){toast(e.message,true)}}
+async function copyLog(){const t=document.getElementById('db').textContent||'';if(!t)return toast('nothing to copy',true);try{await navigator.clipboard.writeText(t);toast('copied')}catch(e){const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('copied')}catch(_){toast('copy failed',true)}ta.remove()}}
+reload();reloadProjects().then(() => { reloadLogs(); reloadUsage(); });
+setInterval(reload,2000);setInterval(reloadUsage,5000);setInterval(()=>{if(page===1)reloadLogs()},5000);
+</script>
+</body>
+</html>

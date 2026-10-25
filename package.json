@@ -1,0 +1,10 @@
+{
+  "name": "9router-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "9router proxy: context shaping + connection resilience + storage logging",
+  "main": "9router-proxy.js",
+  "dependencies": {
+    "pg": "^8.11.3"
+  }
+}
