@@ -31,6 +31,7 @@
       <button id="tabS" onclick="tab('S')" class="valiant-nav-link">Skills (<span id="tabCountS">0</span>)</button>
       <button id="tabM" onclick="tab('M')" class="valiant-nav-link">Match Sandbox</button>
       <button id="tabI" onclick="tab('I')" class="valiant-nav-link">Instructions</button>
+      <button id="tabV" onclick="tab('V')" class="valiant-nav-link">Preview</button>
     </nav>
   </div>
 
@@ -107,6 +108,21 @@
     <div id="tplBox" class="hidden mt-3">
       <pre id="tplPre" class="max-h-64 overflow-y-auto custom-scroll p-3 rounded-lg bg-[#FAF0F5] border hair text-[11px] font-mono whitespace-pre-wrap text-[#3B1C32]"></pre>
     </div>
+  </div>
+</section>
+
+<!-- ==================== VIEW: PREVIEW ==================== -->
+<section id="viewV" class="hidden">
+  <div class="card p-5 bg-white">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold tracking-tight text-[#3B1C32] text-sm">Instructions Preview</h2>
+      <div class="flex items-center gap-2">
+        <span id="previewMeta" class="text-[11px] font-mono text-[#8E5A7A]"></span>
+        <button onclick="downloadInstr()" class="h-7 px-3 rounded-lg bg-[#BE185D] text-white text-xs font-medium hover:bg-[#9D174D]">Download .md</button>
+        <button onclick="loadPreview()" class="h-7 px-3 rounded-lg bg-white border hair text-xs font-medium hover:border-[#E5B6D0] text-[#3B1C32]">Reload</button>
+      </div>
+    </div>
+    <div id="previewBox" class="md-prose max-w-none overflow-y-auto custom-scroll"></div>
   </div>
 </section>
 

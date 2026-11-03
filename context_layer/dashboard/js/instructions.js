@@ -261,3 +261,132 @@ async function previewTpl() {
     toast(e.message, true);
   }
 }
+
+// ponytail: dep-free markdown->HTML. Handles headers, bold/italic/code, lists,
+// fenced code, blockquotes, hr, paragraphs. esc() first so input is safe.
+function mdInline(s) {
+  s = esc(s);
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>');
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  return s;
+}
+
+function mdRender(md) {
+  const lines = String(md || '').split('\n');
+  let html = '';
+  let i = 0;
+  let listType = null; // 'ul' | 'ol'
+  const closeList = () => { if (listType) { html += `</${listType}>`; listType = null; } };
+  while (i < lines.length) {
+    const ln = lines[i];
+    // fenced code block
+    const fence = ln.match(/^```(.*)$/);
+    if (fence) {
+      closeList();
+      const buf = [];
+      i++;
+      while (i < lines.length && !/^```/.test(lines[i])) { buf.push(lines[i]); i++; }
+      i++; // consume closing fence
+      html += `<pre><code>${esc(buf.join('\n'))}</code></pre>`;
+      continue;
+    }
+    // header
+    const h = ln.match(/^(#{1,6})\s+(.*)$/);
+    if (h) {
+      closeList();
+      const lv = h[1].length;
+      html += `<h${lv}>${mdInline(h[2].trim())}</h${lv}>`;
+      i++;
+      continue;
+    }
+    // horizontal rule
+    if (/^(\s*[-*_]){3,}\s*$/.test(ln)) {
+      closeList();
+      html += '<hr>';
+      i++;
+      continue;
+    }
+    // blockquote
+    if (/^>\s?/.test(ln)) {
+      closeList();
+      const buf = [];
+      while (i < lines.length && /^>\s?/.test(lines[i])) { buf.push(lines[i].replace(/^>\s?/, '')); i++; }
+      html += `<blockquote>${mdInline(buf.join(' '))}</blockquote>`;
+      continue;
+    }
+    // unordered list
+    const ul = ln.match(/^\s*[-*+]\s+(.*)$/);
+    if (ul) {
+      if (listType !== 'ul') { closeList(); html += '<ul>'; listType = 'ul'; }
+      html += `<li>${mdInline(ul[1])}</li>`;
+      i++;
+      continue;
+    }
+    // ordered list
+    const ol = ln.match(/^\s*\d+[.)]\s+(.*)$/);
+    if (ol) {
+      if (listType !== 'ol') { closeList(); html += '<ol>'; listType = 'ol'; }
+      html += `<li>${mdInline(ol[1])}</li>`;
+      i++;
+      continue;
+    }
+    // blank line
+    if (!ln.trim()) { closeList(); i++; continue; }
+    // paragraph (join consecutive non-blank, non-structural lines)
+    closeList();
+    const buf = [ln];
+    i++;
+    while (i < lines.length && lines[i].trim() &&
+           !/^(#{1,6})\s/.test(lines[i]) && !/^```/.test(lines[i]) &&
+           !/^\s*[-*+]\s/.test(lines[i]) && !/^\s*\d+[.)]\s/.test(lines[i]) &&
+           !/^>\s?/.test(lines[i]) && !/^(\s*[-*_]){3,}\s*$/.test(lines[i])) {
+      buf.push(lines[i]); i++;
+    }
+    html += `<p>${mdInline(buf.join(' '))}</p>`;
+  }
+  closeList();
+  return html;
+}
+
+async function loadPreview() {
+  const box = document.getElementById('previewBox');
+  const metaEl = document.getElementById('previewMeta');
+  try {
+    const r = await api('/api/instructions');
+    const md = r.content || '';
+    if (box) {
+      box.innerHTML = md.trim()
+        ? mdRender(md)
+        : '<p class="text-[#8E5A7A] italic">No active instruction — requests fall back to incoming. Run #9r-sync or Generate on the Instructions tab.</p>';
+    }
+    if (metaEl) {
+      metaEl.textContent = (r.active ? 'active' : 'empty') +
+        ` · ${md.length} chars` + (r.updatedAt ? ` · ${r.updatedAt}` : '');
+    }
+  } catch (e) {
+    toast(e.message, true);
+  }
+}
+
+async function downloadInstr() {
+  try {
+    const r = await api('/api/instructions');
+    const md = r.content || '';
+    if (!md.trim()) { toast('no active instruction to download', true); return; }
+    const stamp = new Date().toISOString().slice(0, 10);
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `instructions-${stamp}.md`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast('downloaded ' + a.download);
+  } catch (e) {
+    toast(e.message, true);
+  }
+}

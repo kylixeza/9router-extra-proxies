@@ -4,21 +4,23 @@ const VALIANT_VIEWS = {
   P: 'providers',
   S: 'skills',
   M: 'match',
-  I: 'instructions'
+  I: 'instructions',
+  V: 'preview'
 };
 
 const HASH_TO_TAB = {
   providers: 'P',
   skills: 'S',
   match: 'M',
-  instructions: 'I'
+  instructions: 'I',
+  preview: 'V'
 };
 
 let curTab = 'P';
 
 function tab(t) {
   curTab = t;
-  ['P', 'S', 'M', 'I'].forEach(x => {
+  ['P', 'S', 'M', 'I', 'V'].forEach(x => {
     const b = document.getElementById('tab' + x);
     const bm = document.getElementById('tab' + x + '-m');
     const v = document.getElementById('view' + x);
@@ -39,6 +41,7 @@ function tab(t) {
   }
 
   if (t === 'I') loadInstr();
+  if (t === 'V') loadPreview();
 }
 
 function handleHash() {
