@@ -1,0 +1,7 @@
+node_modules/
+spilled/
+logs/
+.DS_Store
+kiro_layer/captures/
+kiro_layer/mitm.log
+kiro_layer/ca-bundle.pem
