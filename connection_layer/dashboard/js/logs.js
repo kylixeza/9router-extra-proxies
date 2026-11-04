@@ -26,11 +26,41 @@ async function reloadLogs() {
     total = j.total || 0;
     page = j.page || page;
     const lsrc = document.getElementById('lsrc');
-    if (lsrc) lsrc.textContent = `· ${j.source} · ${num(total)} total · all-time latest first`;
+    if (lsrc) lsrc.textContent = `${j.source} · ${num(total)} total`;
     renderLogs();
+    renderRecentLogs();
   } catch (e) {
     toast(e.message, true);
   }
+}
+
+function fmtTokCell(l) {
+  if (l.prompt_tokens || l.completion_tokens) {
+    return `<span class="font-medium num">${fmtTok(l.prompt_tokens)}</span><span style="color:var(--muted)">/${fmtTok(l.completion_tokens)}</span>`;
+  }
+  if (l.est_prompt_tokens) {
+    return `<span class="text-xs num" style="color:var(--muted)" title="Estimated">~${fmtTok(l.est_prompt_tokens)}</span>`;
+  }
+  return '<span style="color:var(--muted)">-</span>';
+}
+
+function renderRecentLogs() {
+  const tb = document.getElementById('recentLogs');
+  if (!tb) return;
+  const rows = LOGS.slice(0, 6);
+  tb.innerHTML = rows.length ? rows.map(l => {
+    const prov = l.provider || (l.model && l.model.includes('/') ? l.model.split('/')[0] : 'direct');
+    const bad = Number(l.status) >= 400;
+    return `<tr class="cursor-pointer hover:opacity-90" onclick="inspect('${esc(l.id)}')">
+      <td class="py-1.5 pr-3 font-medium">${esc(l.id || '').slice(0, 8)}</td>
+      <td class="py-1.5 pr-3 whitespace-nowrap num" style="color:var(--muted)">${esc(fmtDate(l.created_at).slice(11))}</td>
+      <td class="py-1.5 pr-3 truncate max-w-[120px]">${esc(l.project_name || '-')}</td>
+      <td class="py-1.5 pr-3 truncate max-w-[200px]"><span>${esc(l.model || '-')}</span> <span class="text-xs" style="color:var(--muted)">${esc(prov)}</span></td>
+      <td class="py-1.5 pr-3 num" style="color:${bad ? 'var(--negative)' : 'var(--text)'}">${l.status ?? '-'}</td>
+      <td class="py-1.5 pr-3 num" style="color:var(--muted)">${l.ms != null ? num(l.ms) : '-'}</td>
+      <td class="py-1.5 num">${fmtTokCell(l)}</td>
+    </tr>`;
+  }).join('') : '<tr><td class="py-4 text-center" style="color:var(--muted)" colspan="7">No requests logged yet.</td></tr>';
 }
 
 function renderLogs() {
@@ -39,41 +69,31 @@ function renderLogs() {
   if (!tbody) return;
   tbody.innerHTML = rows.length ? rows.map(l => {
     const prov = l.provider || (l.model && l.model.includes('/') ? l.model.split('/')[0] : 'direct');
-    const provBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold text-white mr-1" style="background:${provColor(prov)}">${esc(prov)}</span>`;
-    let tokHtml = '-';
-    if (l.prompt_tokens || l.completion_tokens) {
-      tokHtml = `<span class="text-[#2A1A08] font-medium">${fmtTok(l.prompt_tokens)}</span>/<span class="text-[#856E52]">${fmtTok(l.completion_tokens)}</span>`;
-    } else if (l.est_prompt_tokens) {
-      tokHtml = `<span class="px-1.5 py-0.5 rounded bg-[#F3ECE0] text-[#451A03] text-[10px] font-medium border hair" title="Estimated">~${fmtTok(l.est_prompt_tokens)} est</span>`;
-    }
-    return `<tr class="border-b hair last:border-0 hover:bg-[#F3ECE0] cursor-pointer" onclick="inspect('${esc(l.id)}')">
-      <td class="py-1.5 pl-4 pr-1"><button onclick="toggleBookmark(event,'${esc(l.id)}',${!!l.bookmarked})" title="${l.bookmarked ? 'unbookmark' : 'bookmark'}${esc(l.bookmark_note ? ' · ' + l.bookmark_note : '')}" class="text-sm leading-none ${l.bookmarked ? 'text-amber-500 font-bold' : 'text-[#D6BD96] hover:text-amber-500'}">${l.bookmarked ? '★' : '☆'}</button></td>
-      <td class="py-1.5 px-1 font-semibold text-[#2A1A08]">${esc(l.id || '').slice(0, 10)}</td>
-      <td class="py-1.5 pr-3 text-[#856E52] whitespace-nowrap">${esc(fmtDate(l.created_at))}</td>
-      <td class="py-1.5 pr-3 truncate max-w-[140px] text-[#2A1A08]">${esc(l.project_name || '-')}</td>
-      <td class="py-1.5 pr-3 truncate max-w-[220px] text-[#451A03]">${esc(l.method || '')} ${esc(l.path || '')}</td>
-      <td class="py-1.5 pr-3 truncate max-w-[200px] flex items-center">${provBadge}<span class="truncate font-medium">${esc(l.model || '-')}</span></td>
-      <td class="py-1.5 pr-3 text-right font-mono">${l.status ?? '-'}</td>
-      <td class="py-1.5 pr-3 text-right font-mono">${l.ms ?? '-'}</td>
-      <td class="py-1.5 px-4 text-right">${tokHtml}</td>
+    const bad = Number(l.status) >= 400;
+    return `<tr class="cursor-pointer" onclick="inspect('${esc(l.id)}')">
+      <td class="py-2 pr-2"><button onclick="toggleBookmark(event,'${esc(l.id)}',${!!l.bookmarked})" title="${l.bookmarked ? 'Remove saved mark' : 'Save request'}${esc(l.bookmark_note ? ' · ' + l.bookmark_note : '')}" class="text-xs px-1.5 py-0.5 rounded border" style="border-color:${l.bookmarked ? 'var(--accent)' : 'var(--control)'};color:${l.bookmarked ? 'var(--text)' : 'var(--muted)'}">${l.bookmarked ? 'saved' : 'save'}</button></td>
+      <td class="py-2 pr-3 font-medium">${esc(l.id || '').slice(0, 8)}</td>
+      <td class="py-2 pr-3 whitespace-nowrap num" style="color:var(--muted)">${esc(fmtDate(l.created_at))}</td>
+      <td class="py-2 pr-3 truncate max-w-[140px]">${esc(l.project_name || '-')}</td>
+      <td class="py-2 pr-3 truncate max-w-[220px]" style="color:var(--muted)">${esc(l.method || '')} ${esc(l.path || '')}</td>
+      <td class="py-2 pr-3 truncate max-w-[200px]"><span class="truncate">${esc(l.model || '-')}</span> <span class="text-xs" style="color:var(--muted)">${esc(prov)}</span></td>
+      <td class="py-2 pr-3 num" style="color:${bad ? 'var(--negative)' : 'var(--text)'}">${l.status ?? '-'}</td>
+      <td class="py-2 pr-3 num" style="color:var(--muted)">${l.ms != null ? num(l.ms) : '-'}</td>
+      <td class="py-2 num">${fmtTokCell(l)}</td>
     </tr>`;
-  }).join('') : '<tr><td class="py-4 px-4 text-[#856E52]" colspan="9">no logs</td></tr>';
+  }).join('') : '<tr><td class="py-4" style="color:var(--muted)" colspan="9">No matching logs in this range.</td></tr>';
 
   const ps = parseInt(document.getElementById('ps')?.value || '50', 10);
   const pages = Math.max(1, Math.ceil(total / ps));
   const pginfo = document.getElementById('pginfo');
-  if (pginfo) pginfo.textContent = `page ${page}/${pages} · ${LOGS.length} rows`;
+  if (pginfo) pginfo.textContent = `page ${page} of ${pages} · ${LOGS.length} rows`;
 }
 
 function toggleBookmarkFilter() {
   showBookmarked = !showBookmarked;
-  page = 1;
   const b = document.getElementById('bmToggle');
-  if (b) {
-    b.textContent = showBookmarked ? '★' : '☆';
-    b.className = 'h-8 px-2.5 rounded-lg border hair text-xs hover:border-[#D6BD96]' +
-      (showBookmarked ? ' bg-amber-100 border-amber-400 font-bold text-amber-900' : '');
-  }
+  if (b) b.style.borderColor = showBookmarked ? 'var(--accent)' : 'var(--control)';
+  page = 1;
   reloadLogs();
 }
 
@@ -82,19 +102,12 @@ function clearFilters() {
   const projEl = document.getElementById('proj'); if (projEl) projEl.value = '';
   const fromEl = document.getElementById('dfrom'); if (fromEl) fromEl.value = '';
   const toEl = document.getElementById('dto'); if (toEl) toEl.value = '';
-  if (showBookmarked) toggleBookmarkFilterSilent();
+  showBookmarked = false;
+  const b = document.getElementById('bmToggle');
+  if (b) b.style.borderColor = 'var(--control)';
   page = 1;
   reloadLogs();
   reloadUsage();
-}
-
-function toggleBookmarkFilterSilent() {
-  showBookmarked = false;
-  const b = document.getElementById('bmToggle');
-  if (b) {
-    b.textContent = '☆';
-    b.className = 'h-8 px-2.5 rounded-lg border hair text-xs hover:border-[#D6BD96]';
-  }
 }
 
 async function reloadProjects() {
@@ -104,7 +117,7 @@ async function reloadProjects() {
     const sel = document.getElementById('proj');
     if (!sel) return;
     const cur = sel.value;
-    sel.innerHTML = '<option value="">all projects</option>' + (j.projects || []).map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+    sel.innerHTML = '<option value="">All projects</option>' + (j.projects || []).map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
     if (cur) sel.value = cur;
   } catch (_) {}
 }
@@ -128,7 +141,7 @@ async function inspect(id) {
     curBmId = id;
     curBmState = !!bm;
     const btn = document.getElementById('dlgBmBtn');
-    if (btn) btn.textContent = curBmState ? '★ Bookmarked' : '☆ Bookmark';
+    if (btn) btn.textContent = curBmState ? 'Saved' : 'Save';
     const ni = document.getElementById('bmNote');
     if (ni) ni.value = note || '';
     const t = JSON.stringify(log, null, 2);
@@ -153,7 +166,7 @@ async function toggleBookmark(ev, id, cur) {
     });
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
-    toast(j.bookmarked ? 'bookmarked' : 'unbookmarked');
+    toast(j.bookmarked ? 'saved' : 'removed');
     reloadLogs();
   } catch (e) {
     toast(e.message, true);
@@ -173,8 +186,8 @@ async function toggleDlgBookmark() {
     if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
     curBmState = !!j.bookmarked;
     const btn = document.getElementById('dlgBmBtn');
-    if (btn) btn.textContent = curBmState ? '★ Bookmarked' : '☆ Bookmark';
-    toast(curBmState ? 'bookmarked' : 'unbookmarked');
+    if (btn) btn.textContent = curBmState ? 'Saved' : 'Save';
+    toast(curBmState ? 'saved' : 'removed');
     reloadLogs();
   } catch (e) {
     toast(e.message, true);
@@ -194,7 +207,7 @@ async function saveBookmarkNote() {
     if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
     curBmState = true;
     const btn = document.getElementById('dlgBmBtn');
-    if (btn) btn.textContent = '★ Bookmarked';
+    if (btn) btn.textContent = 'Saved';
     toast('note saved');
     reloadLogs();
   } catch (e) {
@@ -209,11 +222,6 @@ async function copyLog() {
     await navigator.clipboard.writeText(t);
     toast('copied');
   } catch (e) {
-    const ta = document.createElement('textarea');
-    ta.value = t;
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand('copy'); toast('copied'); } catch (_) { toast('copy failed', true); }
-    ta.remove();
+    toast('copy failed: ' + e.message, true);
   }
 }

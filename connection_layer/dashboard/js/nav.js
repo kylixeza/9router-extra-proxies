@@ -1,27 +1,26 @@
 'use strict';
 
-const LEON_VIEWS = ['overview', 'usage', 'models', 'logs', 'config'];
+const LEON_VIEWS = ['overview', 'logs', 'config'];
+const VIEW_TITLES = {
+  overview: 'Connection layer',
+  logs: 'Request logs',
+  config: 'Gateway configuration'
+};
+
+window.CUR_VIEW = 'overview';
 
 function showView(name) {
   const target = LEON_VIEWS.includes(name) ? name : 'overview';
+  window.CUR_VIEW = target;
+
+  const h1 = document.getElementById('titleLine');
+  if (h1) h1.textContent = VIEW_TITLES[target] || 'Connection layer';
 
   LEON_VIEWS.forEach(v => {
     const section = document.getElementById('view-' + v);
-    if (section) {
-      if (v === target) {
-        section.classList.remove('hidden');
-      } else {
-        section.classList.add('hidden');
-      }
-    }
+    if (section) section.classList.toggle('hidden', v !== target);
     const navBtn = document.getElementById('nav-' + v);
-    if (navBtn) {
-      if (v === target) {
-        navBtn.classList.add('active');
-      } else {
-        navBtn.classList.remove('active');
-      }
-    }
+    if (navBtn) navBtn.classList.toggle('active', v === target);
   });
 
   if (location.hash !== '#/' + target) {

@@ -7,13 +7,7 @@ function setTimeframe(tf) {
   currentTimeframe = tf;
   ['today', '7d', '30d', 'all'].forEach(k => {
     const b = document.getElementById('tf-' + k);
-    if (b) {
-      if (k === tf) {
-        b.className = 'px-2.5 py-1 rounded-md bg-[#451A03] text-amber-200 font-semibold shadow-sm';
-      } else {
-        b.className = 'px-2.5 py-1 rounded-md text-[#856E52] hover:text-[#2A1A08]';
-      }
-    }
+    if (b) b.classList.toggle('on', k === tf);
   });
   reloadUsage();
 }
@@ -33,7 +27,6 @@ function renderUsage() {
   if (!USAGE) return;
   const provs = USAGE.providers || [];
   const models = USAGE.models || [];
-  const projects = USAGE.projects || [];
   const runaway = USAGE.runaway24h || [];
 
   const totalTok = provs.reduce((acc, p) => acc + Number(p.est_total_tokens || 0), 0);
@@ -43,29 +36,31 @@ function renderUsage() {
   const provBar = document.getElementById('u-prov-bar');
   if (provBar) {
     if (totalTok > 0 && provs.length) {
-      provBar.innerHTML = provs.map(p => {
-        const pct = Math.max(1, Math.round((Number(p.est_total_tokens || 0) / totalTok) * 100));
-        return `<div style="width:${pct}%; background:${provColor(p.provider)}" title="${esc(p.provider)}: ${pct}% (${fmtTok(p.est_total_tokens)})"></div>`;
+      provBar.innerHTML = provs.map((p, idx) => {
+        const pct = Math.max(2, Math.round((Number(p.est_total_tokens || 0) / totalTok) * 100));
+        const bg = idx === 0 ? 'var(--chart-3)' : idx === 1 ? 'var(--chart-1)' : 'var(--control)';
+        return `<div style="width:${pct}%;background:${bg};margin-right:${idx < provs.length - 1 ? '2px' : '0'}" title="${esc(p.provider)}: ${pct}% (${fmtTok(p.est_total_tokens)})"></div>`;
       }).join('');
     } else {
-      provBar.innerHTML = '<div class="w-full bg-[#E8D9C0]"></div>';
+      provBar.innerHTML = '<div class="w-full" style="background:var(--chart-3);opacity:0.25"></div>';
     }
   }
 
   const provList = document.getElementById('u-prov-list');
   if (provList) {
-    provList.innerHTML = provs.length ? provs.map(p => {
-      const pct = totalTok ? ((Number(p.est_total_tokens || 0) / totalTok) * 100).toFixed(1) : 0;
-      const speed = p.tokens_per_sec > 0 ? `· <span class="text-emerald-700 font-medium">${p.tokens_per_sec} tok/s</span>` : '';
+    provList.innerHTML = provs.length ? provs.slice(0, 5).map((p, idx) => {
+      const pct = totalTok ? ((Number(p.est_total_tokens || 0) / totalTok) * 100).toFixed(1) : '0.0';
+      const speed = p.tokens_per_sec > 0 ? ` · ${p.tokens_per_sec} tok/s` : '';
+      const dot = idx === 0 ? 'var(--chart-3)' : idx === 1 ? 'var(--chart-1)' : 'var(--control)';
       return `<div class="flex items-center justify-between py-0.5">
-        <div class="flex items-center gap-1.5 truncate">
-          <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${provColor(p.provider)}"></span>
-          <span class="font-semibold text-[#2A1A08]">${esc(p.provider)}</span>
-          <span class="text-[11px] text-[#856E52]">(${num(p.requests)} req ${speed})</span>
+        <div class="flex items-center gap-2 truncate">
+          <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${dot}"></span>
+          <span class="font-medium">${esc(p.provider)}</span>
+          <span class="text-xs" style="color:var(--muted)">${num(p.requests)} req${speed}</span>
         </div>
-        <div class="text-right whitespace-nowrap"><span class="font-semibold text-[#2A1A08]">${fmtTok(p.est_total_tokens)}</span> <span class="text-[11px] text-[#856E52]">${pct}%</span></div>
+        <div class="text-right whitespace-nowrap num"><span class="font-medium">${fmtTok(p.est_total_tokens)}</span> <span class="text-xs" style="color:var(--muted)">${pct}%</span></div>
       </div>`;
-    }).join('') : '<div class="text-[#856E52]">no provider data</div>';
+    }).join('') : '<div class="text-xs" style="color:var(--muted)">0 tokens in selected range</div>';
   }
 
   const maxModelTok = models.reduce((m, x) => Math.max(m, Number(x.est_total_tokens || 0)), 1);
@@ -73,50 +68,30 @@ function renderUsage() {
   if (modTotEl) modTotEl.textContent = `${models.length} active`;
   const modList = document.getElementById('u-model-list');
   if (modList) {
-    modList.innerHTML = models.length ? models.slice(0, 5).map(m => {
+    modList.innerHTML = models.length ? models.slice(0, 4).map((m, i) => {
       const t = Number(m.est_total_tokens || 0);
       const pct = Math.min(100, Math.round((t / maxModelTok) * 100));
       return `<div>
-        <div class="flex items-center justify-between text-[11px] mb-0.5">
-          <span class="truncate font-semibold text-[#2A1A08] max-w-[160px]" title="${esc(m.model)}">${esc(m.model)}</span>
-          <span class="text-[#2A1A08]">${fmtTok(t)}</span>
+        <div class="flex items-center justify-between text-xs mb-1">
+          <span class="truncate font-medium max-w-[200px]" title="${esc(m.model)}">${esc(m.model)}</span>
+          <span class="num">${fmtTok(t)}</span>
         </div>
-        <div class="h-1.5 w-full bg-[#E8D9C0] rounded-full overflow-hidden">
-          <div class="h-full rounded-full" style="width:${pct}%; background:${provColor(m.provider)}"></div>
-        </div>
-      </div>`;
-    }).join('') : '<div class="text-[#856E52]">no model data</div>';
-  }
-
-  const maxProjTok = projects.reduce((m, x) => Math.max(m, Number(x.est_total_tokens || 0)), 1);
-  const projTotEl = document.getElementById('u-proj-total');
-  if (projTotEl) projTotEl.textContent = `${projects.length} projects`;
-  const projList = document.getElementById('u-proj-list');
-  if (projList) {
-    projList.innerHTML = projects.length ? projects.slice(0, 4).map(pr => {
-      const t = Number(pr.est_total_tokens || 0);
-      const pct = Math.min(100, Math.round((t / maxProjTok) * 100));
-      return `<div>
-        <div class="flex items-center justify-between text-[11px] mb-0.5">
-          <span class="truncate font-semibold text-[#2A1A08] max-w-[150px]">${esc(pr.project_name)}</span>
-          <span class="text-[#2A1A08]">${fmtTok(t)}</span>
-        </div>
-        <div class="h-1.5 w-full bg-[#E8D9C0] rounded-full overflow-hidden">
-          <div class="h-full bg-[#451A03] rounded-full" style="width:${pct}%"></div>
+        <div class="h-1.5 w-full rounded-sm overflow-hidden" style="background:var(--raised)">
+          <div class="h-full" style="width:${pct}%;background:${i === 0 ? 'var(--chart-3)' : 'var(--control)'}"></div>
         </div>
       </div>`;
-    }).join('') : '<div class="text-[#856E52]">no project data</div>';
+    }).join('') : '<div class="text-xs" style="color:var(--muted)">0 models active</div>';
   }
 
   const runawayList = document.getElementById('u-runaway-list');
   if (runawayList) {
-    runawayList.innerHTML = runaway.length ? runaway.slice(0, 3).map(r => {
+    runawayList.innerHTML = runaway.length ? runaway.slice(0, 4).map(r => {
       const t = Number(r.tokens_24h || 0);
-      const runawayAlert = t > 5000000 ? '<span class="px-1.5 py-0.2 rounded bg-red-100 text-red-800 text-[10px] font-bold border border-red-300">⚠️ RUNAWAY</span>' : '';
-      return `<div class="flex items-center justify-between py-0.5">
-        <span class="truncate max-w-[140px] text-[#451A03]">${esc(r.project_name)} ${runawayAlert}</span>
-        <span class="font-medium text-[#2A1A08]">${fmtTok(t)} / 24h</span>
-      </div>`;
-    }).join('') : '<div class="text-[#856E52]">no 24h traffic</div>';
+      const hot = t > 5000000;
+      return `<span class="inline-flex items-center gap-1.5">
+        <span style="color:${hot ? 'var(--negative)' : 'var(--text)'}">${esc(r.project_name)}</span>
+        <span style="color:var(--muted)">${fmtTok(t)}</span>
+      </span>`;
+    }).join('') : '<span style="color:var(--muted)">0 tok in last 24h</span>';
   }
 }
