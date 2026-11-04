@@ -3,184 +3,235 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Valiant</title>
+<title>Valiant - context layer</title>
 <link rel="icon" type="image/svg+xml" href="/dashboard/assets/valiant.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['"JetBrains Mono"','monospace'],display:['Cinzel','serif']}}}}</script>
 <link rel="stylesheet" href="/dashboard/assets/valiant.css">
 </head>
-<body class="min-h-screen font-sans text-sm flex">
+<body class="min-h-screen flex flex-col md:flex-row">
 
-<!-- Side Navigation Bar -->
-<aside class="w-60 min-h-screen bg-[#FDF7FA] border-r hair flex flex-col justify-between shrink-0 sticky top-0 h-screen">
+<!-- Mobile top bar (folds sidebar away on <860px) -->
+<header class="mobile-bar h-12 px-4 items-center justify-between border-b hair" style="background:var(--ground)">
+  <div class="flex items-center gap-2">
+    <button onclick="toggleSidebar()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs font-medium" aria-label="Toggle menu">Menu</button>
+    <img src="/dashboard/assets/valiant.svg" alt="Valiant" class="w-5 h-5 rounded">
+    <span class="font-semibold text-sm">Valiant</span>
+  </div>
+  <div class="flex items-center gap-1.5">
+    <button onclick="openDlg('dlgP')" class="h-8 px-2.5 rounded-md bg-white border hair text-xs font-medium">+ Prov</button>
+    <button onclick="openDlg('dlgS')" class="h-8 px-2.5 rounded-md btn-primary text-xs font-medium">+ Skill</button>
+  </div>
+</header>
+
+<!-- Tinted L-frame: sidebar + top bar share one ground -->
+<div class="flex-1 flex min-h-screen">
+<aside id="valiantSidebar" class="valiant-sidebar" aria-label="Valiant navigation">
   <div>
-    <!-- Brand -->
-    <div class="h-16 px-5 border-b hair flex items-center gap-3">
-      <img src="/dashboard/assets/valiant.svg" alt="Valiant" class="w-8 h-8 rounded-lg shadow-sm">
+    <div class="h-12 px-4 flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <span class="font-display font-bold text-base tracking-wider text-[#3B1C32]">VALIANT</span>
-        <span class="text-[10px] font-mono text-[#8E5A7A] border hair rounded-full px-1.5 py-0.2 bg-white shadow-xs">20130</span>
+        <img src="/dashboard/assets/valiant.svg" alt="Valiant" class="w-6 h-6 rounded-md">
+        <span class="font-semibold text-sm tracking-tight">Valiant</span>
+        <span class="text-xs num" style="color:var(--muted)">:20130</span>
       </div>
+      <button onclick="toggleSidebar()" class="md:hidden h-7 px-2 rounded bg-white border hair text-xs">Close</button>
     </div>
-
-    <!-- Navigation Links -->
-    <nav class="p-3 space-y-1 font-mono">
-      <button id="tabP" onclick="tab('P')" class="valiant-nav-link active">Providers (<span id="tabCountP">0</span>)</button>
-      <button id="tabS" onclick="tab('S')" class="valiant-nav-link">Skills (<span id="tabCountS">0</span>)</button>
-      <button id="tabM" onclick="tab('M')" class="valiant-nav-link">Match Sandbox</button>
-      <button id="tabI" onclick="tab('I')" class="valiant-nav-link">Instructions</button>
-      <button id="tabV" onclick="tab('V')" class="valiant-nav-link">Preview</button>
+    <nav class="px-3 pb-3">
+      <button id="tabP" onclick="tab('P')" class="valiant-nav-link active"><span>Routing rules</span></button>
+      <button id="tabI" onclick="tab('I')" class="valiant-nav-link"><span>Base instructions</span></button>
     </nav>
   </div>
-
-  <!-- Sidebar Footer: Stats & Actions & Cross Link -->
-  <div class="p-3 border-t hair space-y-2 font-mono text-xs">
-    <div class="px-2 text-[11px] text-[#8E5A7A] space-y-0.5">
-      <div>prov: <b id="stP" class="text-[#3B1C32]">-</b> · skills: <b id="stS" class="text-[#3B1C32]">-</b></div>
-      <div>tools: <b id="stT" class="text-[#3B1C32]">-</b> · keys: <b id="stK" class="text-[#3B1C32]">-</b></div>
+  <div class="p-3 space-y-2">
+    <div class="px-2 text-xs leading-relaxed" style="color:var(--muted)">
+      <div><span class="num font-medium" style="color:var(--text)" id="stP">0</span> providers · <span class="num font-medium" style="color:var(--text)" id="stT">0</span> tools</div>
+      <div><span class="num font-medium" style="color:var(--text)" id="stS">0</span> skills · <span class="num font-medium" style="color:var(--text)" id="stK">0</span> keywords</div>
     </div>
-    <div class="flex items-center gap-1.5 pt-1">
-      <button onclick="openDlg('dlgP')" class="flex-1 h-7 rounded-lg bg-white border hair text-xs font-medium hover:border-[#E5B6D0] text-[#3B1C32]">+ Prov</button>
-      <button onclick="openDlg('dlgS')" class="flex-1 h-7 rounded-lg bg-[#BE185D] text-white text-xs font-medium hover:bg-[#9D174D] shadow-xs">+ Skill</button>
+    <div class="flex gap-1.5">
+      <button onclick="openDlg('dlgP')" class="flex-1 h-8 rounded-md bg-white border hair text-xs font-medium">+ Provider</button>
+      <button onclick="openDlg('dlgS')" class="flex-1 h-8 rounded-md btn-primary text-xs font-medium">+ Skill</button>
     </div>
-    <div class="flex items-center gap-1.5">
-      <button onclick="reload()" class="flex-1 h-8 rounded-lg bg-white border hair hover:border-[#E5B6D0] text-[#3B1C32] text-xs font-medium">Reload</button>
-      <a href="http://127.0.0.1:20129/dashboard" target="_blank" class="flex-1 h-8 rounded-lg bg-[#FFFDF8] border border-amber-300 text-amber-950 text-xs font-medium flex items-center justify-center hover:bg-amber-50" title="Leon connection layer">Leon</a>
+    <div class="flex gap-1.5">
+      <button onclick="reload()" class="flex-1 h-8 rounded-md bg-white border hair text-xs font-medium">Reload</button>
+      <a href="http://127.0.0.1:20129/dashboard" target="_blank" class="flex-1 h-8 rounded-md bg-white border hair text-xs font-medium flex items-center justify-center" title="Leon connection layer">Leon ›</a>
     </div>
   </div>
 </aside>
 
-<!-- Main Workspace -->
-<main class="flex-1 p-6 space-y-5 overflow-y-auto max-w-7xl">
-
-<!-- Filter Bar -->
-<div class="flex items-center justify-between gap-3">
-  <div class="relative w-full max-w-md">
-    <input id="q" oninput="render()" placeholder="Filter providers, skills, keywords… (press /)" class="w-full h-9 px-3 rounded-lg bg-white border hair text-xs placeholder:text-[#8E5A7A] text-[#3B1C32]">
-  </div>
-</div>
-
-<!-- ==================== VIEW: PROVIDERS ==================== -->
-<section id="viewP">
-  <div id="provs" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
-</section>
-
-<!-- ==================== VIEW: SKILLS ==================== -->
-<section id="viewS" class="hidden">
-  <div id="skills" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
-</section>
-
-<!-- ==================== VIEW: MATCH SANDBOX ==================== -->
-<section id="viewM" class="hidden">
-  <div class="card p-5 bg-white">
-    <h2 class="font-semibold tracking-tight text-[#3B1C32] mb-3 text-sm">Match Sandbox</h2>
-    <div class="flex flex-col sm:flex-row gap-2">
-      <textarea id="mtext" rows="2" placeholder="e.g. review PR diff and draw architecture diagram on figma" class="flex-1 px-3 py-2 rounded-lg bg-[#FAF0F5] border hair text-sm resize-none text-[#3B1C32]"></textarea>
-      <button onclick="doMatch()" class="sm:w-28 h-10 rounded-lg bg-[#BE185D] text-white text-xs font-medium hover:bg-[#9D174D] shadow-xs">Run</button>
-    </div>
-    <div id="matchResBox" class="hidden mt-4 pt-4 border-t hair">
-      <div id="matchRes" class="flex flex-wrap gap-1.5"></div>
-      <div class="mt-2"><button onclick="clearMatch()" class="text-xs text-[#8E5A7A] hover:text-[#3B1C32]">Clear</button></div>
-    </div>
-  </div>
-</section>
-
-<!-- ==================== VIEW: INSTRUCTIONS ==================== -->
-<section id="viewI" class="hidden">
-  <div class="card p-5 bg-white">
-    <div class="flex items-center justify-between mb-2">
-      <h2 class="font-semibold tracking-tight text-[#3B1C32] text-sm">Agent Base Instructions</h2>
-      <span id="instrMeta" class="text-[11px] font-mono text-[#8E5A7A]"></span>
-    </div>
-    <textarea id="instrTree" style="display:none"></textarea>
-    <div id="instrAcc" class="flex flex-col gap-4"></div>
-    <div class="flex items-center gap-2 mt-4 flex-wrap">
-      <button onclick="saveInstr()" class="h-8 px-4 rounded-lg bg-[#BE185D] text-white text-xs font-medium hover:bg-[#9D174D]">Save</button>
-      <button onclick="loadInstr()" class="h-8 px-3 rounded-lg bg-white border hair text-xs font-medium hover:border-[#E5B6D0] text-[#3B1C32]">Reload</button>
-      <button onclick="addRootHeader()" class="h-8 px-3 rounded-lg bg-white border hair text-xs font-medium hover:border-[#E5B6D0] text-[#3B1C32]">+ Header</button>
-      <button onclick="addRootText()" class="h-8 px-3 rounded-lg bg-white border hair text-xs font-medium hover:border-[#E5B6D0] text-[#3B1C32]">+ Text</button>
-      <button onclick="genInstr()" class="h-8 px-3 rounded-lg bg-white border hair text-xs font-medium hover:border-[#E5B6D0] text-[#3B1C32]">Generate</button>
-      <button onclick="previewTpl()" class="h-8 px-3 rounded-lg bg-white border hair text-xs font-medium hover:border-[#E5B6D0] text-[#3B1C32]">Template</button>
-      <button onclick="clearInstr()" class="h-8 px-3 rounded-lg bg-white border hair text-xs font-medium text-[#8E5A7A] hover:text-red-600">Clear</button>
-    </div>
-    <div id="tplBox" class="hidden mt-3">
-      <pre id="tplPre" class="max-h-64 overflow-y-auto custom-scroll p-3 rounded-lg bg-[#FAF0F5] border hair text-[11px] font-mono whitespace-pre-wrap text-[#3B1C32]"></pre>
-    </div>
-  </div>
-</section>
-
-<!-- ==================== VIEW: PREVIEW ==================== -->
-<section id="viewV" class="hidden">
-  <div class="card p-5 bg-white">
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="font-semibold tracking-tight text-[#3B1C32] text-sm">Instructions Preview</h2>
-      <div class="flex items-center gap-2">
-        <span id="previewMeta" class="text-[11px] font-mono text-[#8E5A7A]"></span>
-        <button onclick="downloadInstr()" class="h-7 px-3 rounded-lg bg-[#BE185D] text-white text-xs font-medium hover:bg-[#9D174D]">Download .md</button>
-        <button onclick="loadPreview()" class="h-7 px-3 rounded-lg bg-white border hair text-xs font-medium hover:border-[#E5B6D0] text-[#3B1C32]">Reload</button>
+<!-- White sheet inset 8px, radius 16 -->
+<div class="flex-1 min-w-0 p-2">
+<div class="sheet min-h-[calc(100svh-16px)] flex flex-col justify-between">
+  <div>
+    <!-- Top bar inside sheet: search + live prompt router -->
+    <div class="px-6 py-3 border-b hair flex flex-wrap items-center justify-between gap-3">
+      <div class="relative w-full sm:w-64">
+        <input id="q" oninput="render()" placeholder="Filter providers, skills, keywords… ( / )" class="w-full h-8 px-3 rounded-md bg-white border hair text-xs">
+      </div>
+      <div class="flex items-center gap-2 flex-1 max-w-xl">
+        <input id="mtext" onkeydown="if(event.key==='Enter')doMatch()" placeholder="Test prompt routing: e.g. review pull request diff or inspect firebase auth" class="flex-1 h-8 px-3 rounded-md border hair text-xs" style="background:var(--raised)">
+        <button onclick="doMatch()" class="h-8 px-3 rounded-md btn-primary text-xs font-medium">Test route</button>
+        <button id="clearMatchBtn" onclick="clearMatch()" class="hidden h-8 px-2.5 rounded-md bg-white border hair text-xs" style="color:var(--muted)">Reset</button>
       </div>
     </div>
-    <div id="previewBox" class="md-prose max-w-none overflow-y-auto custom-scroll"></div>
-  </div>
-</section>
 
-<!-- Terminal Sandbox -->
-<section class="card overflow-hidden bg-white">
-  <div class="px-4 py-2 border-b hair flex items-center justify-between bg-[#FAF0F5]/60">
-    <div class="text-xs font-medium text-[#3B1C32] font-mono">Terminal</div>
-    <button onclick="clearCmd()" class="text-[11px] text-[#8E5A7A] hover:text-[#3B1C32]">clear</button>
-  </div>
-  <div id="cmdOut" class="px-4 py-3 h-28 overflow-y-auto custom-scroll font-mono text-[11px] leading-relaxed text-[#3B1C32] bg-[#FAF0F5]">
-    <div>try: add skill foo path=/x/SKILL.md kw=review, diff · ask review this PR</div>
-  </div>
-  <div class="flex items-center gap-2 p-2 border-t hair bg-white">
-    <span class="pl-2 font-mono text-xs text-[#BE185D]">›</span>
-    <input id="cmd" onkeydown="if(event.key==='Enter')runCmd()" placeholder="add skill foo path=/…/SKILL.md kw=review, diff ··· ask review this PR" class="flex-1 h-9 px-2 bg-transparent text-xs font-mono placeholder:text-[#8E5A7A] text-[#3B1C32]">
-    <button onclick="runCmd()" class="h-8 px-3 rounded-lg bg-[#BE185D] text-white text-xs font-medium hover:bg-[#9D174D]">Run</button>
-  </div>
-</section>
+    <main class="px-6 py-5">
+      <!-- Title row -->
+      <div class="flex items-baseline justify-between flex-wrap gap-2 mb-4">
+        <div>
+          <h1 id="valiantTitle" class="font-semibold tracking-tight" style="font-size:24px;line-height:1.2">Context routing</h1>
+          <p id="valiantSub" class="text-sm mt-1" style="color:var(--muted)">Gate MCP tool groups and skills per prompt by keyword match</p>
+        </div>
+        <div id="matchResBox" class="hidden flex items-center gap-1.5 flex-wrap">
+          <span class="text-xs" style="color:var(--muted)">Matched:</span>
+          <div id="matchRes" class="flex flex-wrap gap-1.5"></div>
+        </div>
+      </div>
 
-</main>
+      <!-- VIEW P: ROUTING (KPI strip + 2-column Providers & Skills lists) -->
+      <section id="viewP" class="space-y-4">
+        <div class="kpi-strip">
+          <div class="kpi-cell lead">
+            <div class="kpi-l">Gated MCP tools</div>
+            <div class="kpi-v num" id="kpiTools">0</div>
+            <div class="kpi-sub">held back until keyword match</div>
+          </div>
+          <div class="kpi-cell">
+            <div class="kpi-l">Tool providers</div>
+            <div class="kpi-v num" id="kpiProvs">0</div>
+            <div class="kpi-sub">active MCP groups</div>
+          </div>
+          <div class="kpi-cell">
+            <div class="kpi-l">Registered skills</div>
+            <div class="kpi-v num" id="kpiSkills">0</div>
+            <div class="kpi-sub">dynamic SKILL.md definitions</div>
+          </div>
+          <div class="kpi-cell">
+            <div class="kpi-l">Trigger keywords</div>
+            <div class="kpi-v num" id="kpiKeys">0</div>
+            <div class="kpi-sub">across providers and skills</div>
+          </div>
+        </div>
 
-<!-- Dialog: Add Provider -->
-<dialog id="dlgP" class="rounded-xl p-0 border hair text-[#3B1C32] max-w-sm w-full bg-white shadow-2xl">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+          <!-- Providers column -->
+          <div class="card overflow-hidden">
+            <div class="px-4 py-3 border-b hair flex items-center justify-between">
+              <div>
+                <h2 class="font-semibold text-base">MCP tool providers</h2>
+                <p class="text-xs" style="color:var(--muted)">Tool groups injected when a prompt matches their keywords</p>
+              </div>
+              <button onclick="openDlg('dlgP')" class="h-8 px-3 rounded-md bg-white border hair text-xs font-medium">+ Provider</button>
+            </div>
+            <div id="provs"></div>
+          </div>
+
+          <!-- Skills column -->
+          <div class="card overflow-hidden">
+            <div class="px-4 py-3 border-b hair flex items-center justify-between">
+              <div>
+                <h2 class="font-semibold text-base">Agent skills</h2>
+                <p class="text-xs" style="color:var(--muted)">Skill definitions advertised when a prompt matches their keywords</p>
+              </div>
+              <button onclick="openDlg('dlgS')" class="h-8 px-3 rounded-md bg-white border hair text-xs font-medium">+ Skill</button>
+            </div>
+            <div id="skills"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW I: INSTRUCTIONS (Side-by-side Editor + Live Preview) -->
+      <section id="viewI" class="hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+          <div class="card p-4">
+            <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+              <div>
+                <h2 class="font-semibold text-base">Header-tree editor</h2>
+                <p class="text-xs" style="color:var(--muted)">Database active instruction overrides incoming system prompt</p>
+              </div>
+              <span id="instrMeta" class="text-xs num" style="color:var(--muted)"></span>
+            </div>
+            <div class="flex items-center gap-1.5 mb-3 flex-wrap">
+              <button onclick="saveInstr()" class="h-8 px-3.5 rounded-md btn-primary text-xs font-medium">Save changes</button>
+              <button onclick="addRootHeader()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs font-medium">+ Section</button>
+              <button onclick="addRootText()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs font-medium">+ Text</button>
+              <button onclick="genInstr()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs font-medium">From template</button>
+              <button onclick="previewTpl()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs font-medium">View template</button>
+              <button onclick="clearInstr()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs font-medium" style="color:var(--negative)">Clear</button>
+            </div>
+            <textarea id="instrTree" style="display:none"></textarea>
+            <div id="instrAcc" class="flex flex-col gap-3"></div>
+            <div id="tplBox" class="hidden mt-3">
+              <pre id="tplPre" class="max-h-64 overflow-y-auto custom-scroll p-3 rounded-lg text-xs whitespace-pre-wrap" style="background:var(--raised);border:1px solid var(--hair)"></pre>
+            </div>
+          </div>
+
+          <div class="card p-4">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b hair">
+              <div>
+                <h2 class="font-semibold text-base">Rendered preview</h2>
+                <span id="previewMeta" class="text-xs num" style="color:var(--muted)">live markdown output</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button onclick="downloadInstr()" class="h-8 px-3 rounded-md bg-white border hair text-xs font-medium">Download .md</button>
+                <button onclick="loadPreview()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs font-medium">Refresh</button>
+              </div>
+            </div>
+            <div id="previewBox" class="md-prose max-w-none overflow-y-auto custom-scroll"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Compact command bar at foot of sheet -->
+  <footer class="px-4 md:px-6 py-3 border-t hair">
+    <div id="cmdOut" class="hidden mb-2 px-3 py-2 max-h-28 overflow-y-auto custom-scroll rounded-md text-xs leading-relaxed" style="background:var(--raised);color:var(--text)"></div>
+    <div class="flex items-center gap-2">
+      <span class="text-xs font-medium" style="color:var(--accent)">Command</span>
+      <input id="cmd" onkeydown="if(event.key==='Enter')runCmd()" placeholder="add skill code-review path=/skills/review/SKILL.md kw=review,diff · ask review pull request · help" class="flex-1 min-w-0 h-8 px-3 rounded-md border hair text-xs" style="background:var(--raised)">
+      <button onclick="runCmd()" class="h-8 px-3 rounded-md bg-white border hair text-xs font-medium flex-shrink-0">Run</button>
+      <button onclick="clearCmd()" class="h-8 px-2.5 rounded-md text-xs flex-shrink-0" style="color:var(--muted)">Reset</button>
+    </div>
+  </footer>
+</div>
+</div>
+</div>
+
+<dialog id="dlgP" class="rounded-xl p-0 border hair max-w-sm w-full" style="background:var(--surface);color:var(--text)">
   <div class="p-5">
-    <h3 class="font-semibold tracking-tight mb-4 text-[#3B1C32] text-sm">New Provider</h3>
-    <label class="text-xs font-medium text-[#8E5A7A]">Name</label>
-    <input id="np" placeholder="github" class="mt-1 mb-3 w-full px-3 h-9 rounded-lg border hair bg-[#FAF0F5] text-xs font-mono text-[#3B1C32]">
-    <label class="text-xs font-medium text-[#8E5A7A]">Keywords</label>
-    <input id="npkw" placeholder="pull request, issue, commit" class="mt-1 w-full px-3 h-9 rounded-lg border hair bg-[#FAF0F5] text-xs text-[#3B1C32]">
+    <h3 class="font-semibold text-sm mb-4">New provider</h3>
+    <label class="text-xs font-medium">Provider name</label>
+    <input id="np" placeholder="github" class="mt-1 mb-3 w-full px-3 h-9 rounded-lg border hair bg-white text-xs">
+    <label class="text-xs font-medium">Trigger keywords</label>
+    <input id="npkw" placeholder="pull request, issue, commit" class="mt-1 w-full px-3 h-9 rounded-lg border hair bg-white text-xs">
     <div class="flex justify-end gap-2 mt-5">
-      <button onclick="this.closest('dialog').close()" class="h-8 px-3 text-xs text-[#8E5A7A]">Cancel</button>
-      <button onclick="addProvider()" class="h-8 px-4 rounded-lg bg-[#BE185D] text-white text-xs font-medium hover:bg-[#9D174D]">Create</button>
+      <button onclick="this.closest('dialog').close()" class="h-8 px-3 text-xs" style="color:var(--muted)">Cancel</button>
+      <button onclick="addProvider()" class="h-8 px-4 rounded-md btn-primary text-xs font-medium">Create</button>
     </div>
   </div>
 </dialog>
 
-<!-- Dialog: Add Skill -->
-<dialog id="dlgS" class="rounded-xl p-0 border hair text-[#3B1C32] max-w-sm w-full bg-white shadow-2xl">
+<dialog id="dlgS" class="rounded-xl p-0 border hair max-w-sm w-full" style="background:var(--surface);color:var(--text)">
   <div class="p-5">
-    <h3 class="font-semibold tracking-tight mb-4 text-[#3B1C32] text-sm">New Skill</h3>
-    <label class="text-xs font-medium text-[#8E5A7A]">Name</label>
-    <input id="ns" placeholder="code-review" class="mt-1 mb-3 w-full px-3 h-9 rounded-lg border hair bg-[#FAF0F5] text-xs font-mono text-[#3B1C32]">
-    <label class="text-xs font-medium text-[#8E5A7A]">Path</label>
-    <input id="nsp" placeholder="/…/SKILL.md" class="mt-1 mb-3 w-full px-3 h-9 rounded-lg border hair bg-[#FAF0F5] text-[11px] font-mono text-[#3B1C32]">
-    <label class="text-xs font-medium text-[#8E5A7A]">Description</label>
-    <textarea id="nsdesc" rows="2" placeholder="what this skill does, when to use it" class="mt-1 mb-3 w-full px-3 py-2 rounded-lg border hair bg-[#FAF0F5] text-[11px] text-[#3B1C32]"></textarea>
-    <label class="text-xs font-medium text-[#8E5A7A]">Keywords</label>
-    <input id="nskw" placeholder="review, diff, pr" class="mt-1 w-full px-3 h-9 rounded-lg border hair bg-[#FAF0F5] text-xs text-[#3B1C32]">
+    <h3 class="font-semibold text-sm mb-4">New skill</h3>
+    <label class="text-xs font-medium">Skill name</label>
+    <input id="ns" placeholder="code-review" class="mt-1 mb-3 w-full px-3 h-9 rounded-lg border hair bg-white text-xs">
+    <label class="text-xs font-medium">SKILL.md file path</label>
+    <input id="nsp" placeholder="/Users/you/.agents/skills/code-review/SKILL.md" class="mt-1 mb-3 w-full px-3 h-9 rounded-lg border hair bg-white text-xs">
+    <label class="text-xs font-medium">Description</label>
+    <textarea id="nsdesc" rows="2" placeholder="When to activate this skill and what it does" class="mt-1 mb-3 w-full px-3 py-2 rounded-lg border hair bg-white text-xs"></textarea>
+    <label class="text-xs font-medium">Trigger keywords</label>
+    <input id="nskw" placeholder="review, diff, pr" class="mt-1 w-full px-3 h-9 rounded-lg border hair bg-white text-xs">
     <div class="flex justify-end gap-2 mt-5">
-      <button onclick="this.closest('dialog').close()" class="h-8 px-3 text-xs text-[#8E5A7A]">Cancel</button>
-      <button onclick="addSkill()" class="h-8 px-4 rounded-lg bg-[#BE185D] text-white text-xs font-medium hover:bg-[#9D174D]">Save</button>
+      <button onclick="this.closest('dialog').close()" class="h-8 px-3 text-xs" style="color:var(--muted)">Cancel</button>
+      <button onclick="addSkill()" class="h-8 px-4 rounded-md btn-primary text-xs font-medium">Save</button>
     </div>
   </div>
 </dialog>
 
 <div id="toast" class="fixed right-4 bottom-4 z-50 flex flex-col gap-2"></div>
 
-<!-- Scripts modular split -->
 <script src="/dashboard/assets/js/shared.js"></script>
 <script src="/dashboard/assets/js/providers.js"></script>
 <script src="/dashboard/assets/js/skills.js"></script>

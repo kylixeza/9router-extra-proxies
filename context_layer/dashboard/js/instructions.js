@@ -51,7 +51,8 @@ function mkBtn(t, fn, title) {
   const b = document.createElement('button');
   b.textContent = t;
   b.title = title || t;
-  b.className = 'h-6 min-w-6 px-1 rounded-md border hair bg-white text-[11px] font-mono text-[#8E5A7A] hover:text-[#3B1C32] hover:border-[#E5B6D0]';
+  b.className = 'h-6 min-w-6 px-1 rounded-md border hair bg-white text-[11px] font-mono';
+  b.style.color = 'var(--muted)';
   b.onclick = (e) => { e.preventDefault(); fn(); };
   return b;
 }
@@ -59,11 +60,13 @@ function mkBtn(t, fn, title) {
 function textNodeEl(text) {
   const w = document.createElement('div');
   w.dataset.ntype = 'x';
-  w.className = 'rounded-lg border hair bg-[#FAF0F5] p-2';
+  w.className = 'rounded-lg border hair p-2';
+  w.style.background = 'var(--raised)';
   const bar = document.createElement('div');
   bar.className = 'flex items-center gap-1 mb-1';
   const tag = document.createElement('span');
-  tag.className = 'text-[10px] font-mono text-[#8E5A7A]';
+  tag.className = 'text-[10px] font-mono';
+  tag.style.color = 'var(--muted)';
   tag.textContent = 'text';
   bar.appendChild(tag);
   bar.appendChild(Object.assign(document.createElement('span'), { className: 'flex-1' }));
@@ -75,7 +78,7 @@ function textNodeEl(text) {
   ta.dataset.body = '1';
   ta.value = text || '';
   ta.rows = 2;
-  ta.className = 'w-full px-2 py-1.5 rounded-md bg-white border hair text-xs font-mono resize-y text-[#3B1C32]';
+  ta.className = 'w-full px-2 py-1.5 rounded-md bg-white border hair text-xs font-mono resize-y';
   ta.oninput = () => autoGrow(ta);
   w.appendChild(ta);
   requestAnimationFrame(() => autoGrow(ta));
@@ -91,9 +94,10 @@ function headerNodeEl(level, title) {
   const w = document.createElement('div');
   w.dataset.ntype = 'h';
   w.dataset.level = level;
-  w.className = 'rounded-lg border hair bg-white overflow-hidden shadow-xs';
+  w.className = 'rounded-lg border hair bg-white overflow-hidden';
   const hd = document.createElement('div');
-  hd.className = 'flex items-center gap-1.5 px-2.5 py-2 bg-[#FAF0F5] border-b hair';
+  hd.className = 'flex items-center gap-1.5 px-2.5 py-2 border-b hair';
+  hd.style.background = 'var(--raised)';
   const tg = mkBtn('▾', () => {
     const b = w.querySelector('[data-kids]');
     const hid = b.classList.toggle('hidden');
@@ -102,13 +106,14 @@ function headerNodeEl(level, title) {
   hd.appendChild(tg);
   const badge = document.createElement('span');
   badge.dataset.badge = '1';
-  badge.className = 'px-1.5 py-0.5 rounded bg-[#BE185D] text-white text-[10px] font-mono whitespace-nowrap font-bold';
+  badge.className = 'px-1.5 py-0.5 rounded text-white text-[10px] font-mono whitespace-nowrap font-bold';
+  badge.style.background = 'var(--text)';
   badge.textContent = accBadge(level);
   hd.appendChild(badge);
   const inp = document.createElement('input');
   inp.dataset.title = '1';
   inp.value = title || 'Untitled';
-  inp.className = 'flex-1 h-7 px-2 rounded-md bg-white border hair text-[#3B1C32]';
+  inp.className = 'flex-1 h-7 px-2 rounded-md bg-white border hair';
   const _tf0 = titleFont(level);
   inp.style.fontSize = _tf0[0];
   inp.style.fontWeight = _tf0[1];
@@ -141,17 +146,17 @@ function headerNodeEl(level, title) {
   w.appendChild(kids);
 
   const bar = document.createElement('div');
-  bar.className = 'flex items-center gap-1.5 px-2.5 pt-2 pb-2.5 bg-[#FAF0F5]/40';
+  bar.className = 'flex items-center gap-1.5 px-2.5 pt-2 pb-2.5';
   const addH = mkBtn('+ Header', () => {
     kids.appendChild(headerNodeEl((+w.dataset.level || 1) + 1, 'New section'));
     kids.lastChild.scrollIntoView({ block: 'nearest' });
   });
-  addH.className = 'h-7 px-2.5 rounded-md border hair bg-white text-[11px] font-medium text-[#3B1C32] hover:border-[#E5B6D0]';
+  addH.className = 'h-7 px-2.5 rounded-md border hair bg-white text-[11px] font-medium';
   const addT = mkBtn('+ Text', () => {
     kids.appendChild(textNodeEl(''));
     kids.lastChild.scrollIntoView({ block: 'nearest' });
   });
-  addT.className = 'h-7 px-2.5 rounded-md border hair bg-white text-[11px] font-medium text-[#3B1C32] hover:border-[#E5B6D0]';
+  addT.className = 'h-7 px-2.5 rounded-md border hair bg-white text-[11px] font-medium';
   bar.appendChild(addH);
   bar.appendChild(addT);
   w.appendChild(bar);
@@ -210,9 +215,8 @@ async function loadInstr() {
     const n = (r.content || '').length;
     const metaEl = document.getElementById('instrMeta');
     if (metaEl) {
-      metaEl.textContent = (r.active ? 'active' : 'empty · fallback incoming') +
-        ` · ${n} chars` + (r.updatedAt ? ` · ${r.updatedAt}` : '') +
-        (r.hasTemplate ? ` · template ✓ ${r.templateLen || 0} chars` : ' · template — run #9r-sync');
+      metaEl.textContent = (r.active ? 'active' : 'empty (fallback)') +
+        ` · ${n} chars` + (r.hasTemplate ? ` · template ${r.templateLen || 0}c` : '');
     }
   } catch (e) {
     toast(e.message, true);

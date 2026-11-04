@@ -10,10 +10,10 @@ async function doMatch() {
     if (box) box.classList.remove('hidden');
     if (res) {
       res.innerHTML = (r.providers || []).map(p =>
-        `<span class="px-2 py-1 rounded-md text-[11px] font-medium bg-[#3B1C32] text-pink-100 shadow-sm">mcp:${esc(p)}</span>`
+        `<span class="px-2 py-1 rounded-md text-[11px] font-medium" style="background:var(--text);color:#fff">mcp:${esc(p)}</span>`
       ).join('') + (r.skills || []).map(s =>
-        `<span class="px-2 py-1 rounded-md text-[11px] font-medium bg-[#FCE7F3] border border-pink-300 text-rose-900">skill:${esc(s)}</span>`
-      ).join('') || '<span class="text-xs text-[#8E5A7A]">no match</span>';
+        `<span class="px-2 py-1 rounded-md text-[11px] font-medium bg-white border hair">skill:${esc(s)}</span>`
+      ).join('') || '<span class="text-xs" style="color:var(--muted)">no match</span>';
     }
     toast(`matched ${r.providers?.length || 0} prov / ${r.skills?.length || 0} skill`);
   } catch (e) {

@@ -4,7 +4,8 @@ function clog(m, isErr = false) {
   const b = document.getElementById('cmdOut');
   if (!b) return;
   const d = document.createElement('div');
-  d.className = isErr ? 'text-rose-600 font-semibold' : 'text-[#3B1C32]';
+  d.style.color = isErr ? 'var(--negative)' : 'var(--text)';
+  if (isErr) d.style.fontWeight = '600';
   d.textContent = m;
   b.appendChild(d);
   b.scrollTop = b.scrollHeight;
