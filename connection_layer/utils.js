@@ -60,6 +60,9 @@ function callUpstream(url, opts, payload, onReq) {
 function upstreamHeaders(req, payload) {
   const h = { ...req.headers };
   delete h.host; delete h.connection; delete h['keep-alive']; delete h['transfer-encoding'];
+  for (const k of Object.keys(h)) {
+    if (k.toLowerCase().startsWith('x-orch-')) delete h[k];
+  }
   h['accept-encoding'] = 'identity';
   if (payload && payload.length) h['content-length'] = payload.length; else delete h['content-length'];
   return h;
@@ -74,6 +77,7 @@ function retryDelay(res, attempt) {
 function dedupKey(req, p, payload) {
   return crypto.createHash('sha256')
     .update(req.headers.authorization || '').update('\0')
+    .update(req.headers['x-orch-model'] || '').update('\0')
     .update(p).update('\0').update(payload).digest('hex');
 }
 

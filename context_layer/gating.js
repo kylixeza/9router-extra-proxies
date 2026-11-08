@@ -220,10 +220,12 @@ function responsesFieldsTokens(body, cpt) {
   return n;
 }
 
-function shapeRequest(body, p, convId) {
+function shapeRequest(body, p, convId, opts = {}) {
   const model = body.model || 'default';
   const cpt = getCharsPerToken(model);
   const isStream = body.stream === true;
+  const orchBudget = opts && Number.isFinite(opts.orchBudget) && opts.orchBudget > 0 ? opts.orchBudget : null;
+  const hasOrchModel = Boolean(opts && opts.hasOrchModel);
 
   const rawToolTokens = estimateToolsTokens(body.tools, cpt);
   const rawExtraTokens = responsesFieldsTokens(body, cpt);
@@ -281,15 +283,16 @@ Only use keywords from the lists above. If none match, reply with: KEYWORDS: non
 
   const toolTokens = estimateToolsTokens(body.tools, cpt);
   const extraTokens = responsesFieldsTokens(body, cpt);
+  const effectiveBudget = orchBudget || CFG.modelContextTokens[model] || CFG.maxContextTokens;
   let ctxInfo = {
     msgTokens: extraTokens,
     toolTokens,
     totalInputTokens: toolTokens + extraTokens,
     rawTotalTokens: toolTokens + extraTokens,
     savedTokens: 0,
-    budget: CFG.modelContextTokens[model] || CFG.maxContextTokens,
+    budget: effectiveBudget,
     changes: {},
-    overBudget: false,
+    overBudget: effectiveBudget > 0 && (toolTokens + extraTokens) > effectiveBudget,
   };
 
   if (Array.isArray(body.messages)) {
@@ -297,8 +300,12 @@ Only use keywords from the lists above. If none match, reply with: KEYWORDS: non
     const res = compactContextByTokens(body.messages, toolTokens, model);
     body.messages = res.messages;
     ctxInfo = res;
-    if (res.overBudget && CFG.longContextModel && body.model !== CFG.longContextModel) {
-      console.log(`[context] ~${res.totalInputTokens} tokens exceeds ${model}'s budget (${res.budget}); routing to ${CFG.longContextModel}`);
+    if (orchBudget) {
+      ctxInfo.budget = orchBudget;
+      ctxInfo.overBudget = ctxInfo.totalInputTokens > orchBudget;
+    }
+    if (!hasOrchModel && ctxInfo.overBudget && CFG.longContextModel && body.model !== CFG.longContextModel) {
+      console.log(`[context] ~${res.totalInputTokens} tokens exceeds ${model}'s budget (${ctxInfo.budget}); routing to ${CFG.longContextModel}`);
       body.model = CFG.longContextModel;
       stats.routedToLongContext++;
       ctxInfo.budget = CFG.modelContextTokens[CFG.longContextModel] || ctxInfo.budget;

@@ -41,13 +41,19 @@ async function handle(req, res) {
   let convId = null;
   let reqMeta = { model: null, isStream: false, rawPromptChars: 0, estTokens: 0, effectiveTokens: 0, msgCount: 0, budget: 0, pct: 0 };
 
+  const orchBudgetRaw = parseInt(req.headers['x-orch-model-context'] || '', 10);
+  const orchOpts = {
+    orchBudget: Number.isFinite(orchBudgetRaw) && orchBudgetRaw > 0 ? orchBudgetRaw : null,
+    hasOrchModel: Boolean(req.headers['x-orch-model']),
+  };
+
   if (isJsonPost && raw.length) {
     try {
       bodyObj = JSON.parse(raw.toString('utf8'));
       if (bodyObj && typeof bodyObj === 'object' && !Array.isArray(bodyObj)) {
         convId = getConversationId(bodyObj, req);
         checkAndCleanChatConfirmation(bodyObj, convId);
-        reqMeta = shapeRequest(bodyObj, p, convId);
+        reqMeta = shapeRequest(bodyObj, p, convId, orchOpts);
 
         const currentDecision = sessionDecisions.get(convId);
 

@@ -28,18 +28,36 @@ async function handle(req, res) {
   let bodyObj = null;
   if (isJsonPost && raw.length) { try { bodyObj = JSON.parse(raw.toString('utf8')); } catch (_) {} }
 
+  const forcedOrchModel = typeof req.headers['x-orch-model'] === 'string' ? req.headers['x-orch-model'].trim() : '';
+  let appliedOrch = null;
+
   const meta = { id, method: req.method, path: p, model: null, provider: null, stream: false, attempts: 0, fallbackUsed: null, estPromptTokens: null, estCompletionTokens: null };
   if (bodyObj && typeof bodyObj === 'object' && !Array.isArray(bodyObj)) {
+    const rawModelBeforePrep = bodyObj.model;
     const info = prepareModelAndParams(bodyObj);
-    meta.model = info.model;
+    let finalModel = info.model;
+    if (forcedOrchModel) {
+      if (bodyObj.model !== forcedOrchModel) bodyObj.model = forcedOrchModel;
+      finalModel = forcedOrchModel;
+      appliedOrch = {
+        model: forcedOrchModel,
+        by: rawModelBeforePrep === forcedOrchModel ? 'orchestration' : 'connection',
+      };
+    }
+    meta.model = finalModel;
     meta.stream = info.stream;
-    const pm = parseProviderModel(info.model);
+    const pm = parseProviderModel(finalModel);
     meta.provider = pm.provider;
-    meta.estPromptTokens = estimateRequestTokens(bodyObj, info.model);
+    meta.estPromptTokens = estimateRequestTokens(bodyObj, finalModel);
   } else {
     bodyObj = null;
   }
   let payload = bodyObj ? Buffer.from(JSON.stringify(bodyObj), 'utf8') : raw;
+
+  const orchResHeaders = appliedOrch ? {
+    'x-orch-applied-model': appliedOrch.model,
+    'x-orch-rewritten-by': appliedOrch.by,
+  } : null;
 
   let clientGone = false;
   let currentReq = null;
@@ -59,12 +77,15 @@ async function handle(req, res) {
     const hit = state.dedupCache.get(key);
     if (hit && Date.now() - hit.at < CFG.dedupTtlMs) {
       state.stats.dedupHits++;
-      return sendBuffered(res, hit.status, hit.headers, hit.body, { 'x-cache': 'dedup' });
+      return sendBuffered(res, hit.status, hit.headers, hit.body, { 'x-cache': 'dedup', ...(orchResHeaders || {}) });
     }
     const pending = state.inflight.get(key);
     if (pending) {
       const entry = await pending;
-      if (entry) { state.stats.coalesced++; return sendBuffered(res, entry.status, entry.headers, entry.body, { 'x-cache': 'coalesced' }); }
+      if (entry) {
+        state.stats.coalesced++;
+        return sendBuffered(res, entry.status, entry.headers, entry.body, { 'x-cache': 'coalesced', ...(orchResHeaders || {}) });
+      }
     } else {
       let done;
       const pr = new Promise(r => { done = r; });
@@ -74,7 +95,9 @@ async function handle(req, res) {
   }
 
   try {
-    const chain = [bodyObj ? bodyObj.model : undefined, ...(bodyObj ? (CFG.fallbacks[bodyObj.model] || []) : [])];
+    const chain = forcedOrchModel
+      ? [forcedOrchModel]
+      : [bodyObj ? bodyObj.model : undefined, ...(bodyObj ? (CFG.fallbacks[bodyObj.model] || []) : [])];
     const upstreamUrl = new URL(req.url, CFG.target);
     let upstreamRes = null, lastErr = null;
 
@@ -120,7 +143,7 @@ async function handle(req, res) {
     }
 
     const status = upstreamRes.statusCode;
-    const rh = { ...upstreamRes.headers };
+    const rh = { ...upstreamRes.headers, ...(orchResHeaders || {}) };
     const ct = String(rh['content-type'] || '');
     const isSSE = ct.includes('text/event-stream');
     const buffered = !meta.stream && !isSSE && /json/.test(ct);
