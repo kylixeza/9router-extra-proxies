@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orch - orchestration layer</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none'%3E%3Crect x='4' y='4' width='40' height='40' rx='9' fill='%231b6c80'/%3E%3Ccircle cx='24' cy='15' r='3.5' fill='%23f4f8fa'/%3E%3Ccircle cx='15' cy='32' r='3.5' fill='%23f4f8fa'/%3E%3Ccircle cx='33' cy='32' r='3.5' fill='%23f4f8fa'/%3E%3Cpath d='M24 18.5v5.5M24 24l-9 4.5M24 24l9 4.5' stroke='%23f4f8fa' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="/orch/assets/orch.css">
+</head>
+<body class="min-h-screen flex flex-col md:flex-row">
+
+<!-- Mobile top bar -->
+<header class="mobile-bar h-12 px-4 items-center justify-between border-b hair" style="background:var(--ground)">
+  <div class="flex items-center gap-2">
+    <button type="button" onclick="toggleSidebar()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs font-medium" aria-label="Toggle menu">Menu</button>
+    <span class="brand-glyph" aria-hidden="true">O</span>
+    <span class="font-semibold text-sm">Orch</span>
+    <span class="text-xs num" style="color:var(--muted)">:20131</span>
+  </div>
+  <div class="flex items-center gap-1.5">
+    <span id="mobileEnabledPill" class="pill pill-neutral text-xs num">● —</span>
+    <button type="button" onclick="syncModels()" class="h-8 px-2.5 rounded-md btn-primary text-xs font-medium">⟳ Sync</button>
+  </div>
+</header>
+
+<!-- Tinted L-frame: sidebar + inset white sheet -->
+<div class="flex-1 flex min-h-screen">
+<aside id="orchSidebar" class="orch-sidebar" aria-label="Orchestration navigation">
+  <div>
+    <div class="h-12 px-4 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="brand-glyph" aria-hidden="true">O</span>
+        <span class="font-semibold text-sm tracking-tight">Orch</span>
+        <span class="text-xs num" style="color:var(--muted)">:20131</span>
+      </div>
+      <button type="button" onclick="toggleSidebar()" class="md:hidden h-7 px-2 rounded bg-white border hair text-xs">Close</button>
+    </div>
+
+    <div class="px-4 pb-3 space-y-1.5">
+      <div class="flex items-center justify-between gap-1.5">
+        <span id="hdrEnabledPill" class="pill pill-neutral text-xs font-medium">○ loading</span>
+        <span id="hdrR9Pill" class="pill pill-neutral text-xs num" title="9router reachability">9router · —</span>
+      </div>
+    </div>
+
+    <nav class="px-3 pb-3" role="tablist" aria-label="Orchestration sections">
+      <button type="button" id="nav-models" onclick="switchTab('models')" class="orch-nav-link active" role="tab" aria-selected="true">
+        <span>Models</span>
+        <span id="navCountModels" class="text-xs num" style="color:var(--muted)">0/0</span>
+      </button>
+      <button type="button" id="nav-orchestrator" onclick="switchTab('orchestrator')" class="orch-nav-link" role="tab" aria-selected="false">
+        <span>Orchestrator</span>
+        <span id="navWarnBadge" class="hidden pill pill-warning text-[11px] num">0</span>
+      </button>
+      <button type="button" id="nav-monitor" onclick="switchTab('monitor')" class="orch-nav-link" role="tab" aria-selected="false">
+        <span>Monitor</span>
+        <span id="navMismatchBadge" class="hidden pill pill-negative text-[11px] num">0</span>
+      </button>
+      <button type="button" id="nav-tester" onclick="switchTab('tester')" class="orch-nav-link" role="tab" aria-selected="false">
+        <span>Route tester</span>
+      </button>
+    </nav>
+  </div>
+
+  <div class="p-3 space-y-2 border-t hair">
+    <div class="px-2 text-xs leading-relaxed space-y-0.5" style="color:var(--muted)">
+      <div>DB: <span id="stDb" class="num font-medium" style="color:var(--text)">—</span> · up <span id="stUptime" class="num font-medium" style="color:var(--text)">—</span></div>
+      <div>Roster: <span id="stRosterHash" class="mono text-[11px]" style="color:var(--text)">—</span> · <span id="stRosterTok" class="num">~0 tok</span></div>
+    </div>
+    <div class="flex gap-1.5">
+      <button type="button" onclick="refreshAll()" class="flex-1 h-8 rounded-md bg-white border hair text-xs font-medium hover:bg-gray-50">Reload</button>
+      <a href="/orch/roster" target="_blank" rel="noopener" class="flex-1 h-8 rounded-md bg-white border hair text-xs font-medium flex items-center justify-center hover:bg-gray-50" title="Plain text /orch/roster">Roster ↗</a>
+    </div>
+    <div class="flex gap-1.5">
+      <a href="http://127.0.0.1:20130/dashboard" target="_blank" rel="noopener" class="flex-1 h-8 rounded-md bg-white border hair text-xs font-medium flex items-center justify-center hover:bg-gray-50" title="Valiant context layer (:20130)">Valiant :20130 ›</a>
+      <a href="http://127.0.0.1:20129/dashboard" target="_blank" rel="noopener" class="flex-1 h-8 rounded-md bg-white border hair text-xs font-medium flex items-center justify-center hover:bg-gray-50" title="Leon connection layer (:20129)">Leon :20129 ›</a>
+    </div>
+  </div>
+</aside>
+
+<!-- White sheet inset 8px, radius 16 -->
+<div class="flex-1 min-w-0 p-2">
+<div class="sheet min-h-[calc(100svh-16px)] flex flex-col justify-between">
+  <div>
+    <!-- Top bar inside sheet -->
+    <div class="px-6 py-3 border-b hair flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5 flex-wrap">
+        <span id="sheetStatusPill" class="pill pill-neutral text-xs font-medium">○ disabled</span>
+        <span class="text-xs num" style="color:var(--muted)">port :20131</span>
+        <span style="color:var(--control)">·</span>
+        <span id="sheetR9Text" class="text-xs num" style="color:var(--muted)">9router checking…</span>
+        <span id="sheetMismatchPill" class="hidden pill pill-negative text-xs num"></span>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <a href="http://127.0.0.1:20130/dashboard" target="_blank" rel="noopener" class="h-7 px-2.5 rounded-md bg-white border hair text-xs flex items-center gap-1 hover:bg-gray-50">Valiant <span class="num" style="color:var(--muted)">:20130</span></a>
+        <a href="http://127.0.0.1:20129/dashboard" target="_blank" rel="noopener" class="h-7 px-2.5 rounded-md bg-white border hair text-xs flex items-center gap-1 hover:bg-gray-50">Leon <span class="num" style="color:var(--muted)">:20129</span></a>
+      </div>
+    </div>
+
+    <!-- Dismissible inline error banner -->
+    <div id="errBanner" class="hidden mx-6 mt-4 px-4 py-2.5 rounded-lg border flex items-start justify-between gap-3 text-xs" style="background:var(--pill-negative-bg);color:var(--pill-negative-ink);border-color:#f5c2c0">
+      <div class="space-y-0.5">
+        <div class="font-semibold" id="errBannerTitle">Request failed</div>
+        <div id="errBannerMsg" class="mono break-all"></div>
+      </div>
+      <button type="button" onclick="hideErrorBanner()" class="px-2 py-0.5 rounded bg-white/80 border hair text-xs font-medium shrink-0">Dismiss</button>
+    </div>
+
+    <main class="px-6 py-5">
+
+      <!-- ================================================================ -->
+      <!-- TAB 1: MODELS (#tab-models)                                      -->
+      <!-- ================================================================ -->
+      <section id="tab-models" class="space-y-4">
+        <div class="flex items-baseline justify-between flex-wrap gap-3">
+          <div>
+            <h1 class="font-semibold tracking-tight" style="font-size:24px;line-height:1.2">Model catalog</h1>
+            <p class="text-sm mt-1" style="color:var(--muted)">Sync models from 9router, assign orchestration roles, tiers, and tool capabilities</p>
+          </div>
+          <!-- Sync bar -->
+          <div class="flex items-center gap-3 flex-wrap">
+            <span id="syncSummaryText" class="text-xs num" style="color:var(--muted)">Belum disinkronkan</span>
+            <button type="button" id="btnSyncModels" onclick="syncModels()" class="h-8 px-3.5 rounded-md btn-primary text-xs font-medium inline-flex items-center gap-1.5">
+              <span id="syncSpinIcon">⟳</span>
+              <span>Sync dari 9router</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="card p-3 flex flex-wrap items-center gap-2.5">
+          <div class="relative flex-1 min-w-[200px]">
+            <input id="fSearch" type="search" aria-label="Cari model" oninput="onFilterChange()" placeholder="Cari model ID, family, owned_by, notes… ( / )" class="w-full h-8 px-3 rounded-md bg-white border hair text-xs">
+          </div>
+          <div class="flex items-center gap-1.5">
+            <label for="fRole" class="text-xs" style="color:var(--muted)">Role</label>
+            <select id="fRole" onchange="onFilterChange()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs">
+              <option value="all">all</option>
+              <option value="orchestrator">orchestrator</option>
+              <option value="worker">worker</option>
+              <option value="fixer">fixer</option>
+              <option value="reviewer">reviewer</option>
+              <option value="summarizer">summarizer</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <label for="fStatus" class="text-xs" style="color:var(--muted)">Status</label>
+            <select id="fStatus" onchange="onFilterChange()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs">
+              <option value="all">all</option>
+              <option value="active">active</option>
+              <option value="inactive">inactive</option>
+              <option value="unavailable">unavailable</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-1 flex-wrap" role="group" aria-label="Capability filters">
+            <span class="text-xs mr-1" style="color:var(--muted)">Cap:</span>
+            <button type="button" data-cap="tools" onclick="toggleCapFilter('tools')" class="cap-filter-pill">tools</button>
+            <button type="button" data-cap="vision" onclick="toggleCapFilter('vision')" class="cap-filter-pill">vision</button>
+            <button type="button" data-cap="pdf" onclick="toggleCapFilter('pdf')" class="cap-filter-pill">pdf</button>
+            <button type="button" data-cap="reasoning" onclick="toggleCapFilter('reasoning')" class="cap-filter-pill">reasoning</button>
+            <button type="button" data-cap="search" onclick="toggleCapFilter('search')" class="cap-filter-pill">search</button>
+          </div>
+          <button type="button" onclick="resetFilters()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs" style="color:var(--muted)">Reset</button>
+        </div>
+
+        <!-- Bulk action bar -->
+        <div id="bulkBar" class="hidden card px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2.5" style="background:var(--raised)">
+          <div class="flex items-center gap-2 text-xs">
+            <span class="font-semibold num" id="bulkSelectedCount">0 dipilih</span>
+            <button type="button" onclick="clearModelSelection()" class="underline text-xs" style="color:var(--muted)">Batal pilih</button>
+          </div>
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button type="button" onclick="runBulk({ isActive: true })" class="h-7 px-2.5 rounded bg-white border hair text-xs font-medium hover:bg-gray-50">Activate selected</button>
+            <button type="button" onclick="runBulk({ isActive: false })" class="h-7 px-2.5 rounded bg-white border hair text-xs font-medium hover:bg-gray-50">Deactivate selected</button>
+
+            <select id="bulkAddRoleSel" aria-label="Bulk add role" onchange="if(this.value){runBulk({addRole:this.value});this.value='';}" class="h-7 px-2 rounded bg-white border hair text-xs">
+              <option value="">+ Add role…</option>
+              <option value="orchestrator">orchestrator</option>
+              <option value="worker">worker</option>
+              <option value="fixer">fixer</option>
+              <option value="reviewer">reviewer</option>
+              <option value="summarizer">summarizer</option>
+            </select>
+
+            <select id="bulkRemRoleSel" aria-label="Bulk remove role" onchange="if(this.value){runBulk({removeRole:this.value});this.value='';}" class="h-7 px-2 rounded bg-white border hair text-xs">
+              <option value="">− Remove role…</option>
+              <option value="orchestrator">orchestrator</option>
+              <option value="worker">worker</option>
+              <option value="fixer">fixer</option>
+              <option value="reviewer">reviewer</option>
+              <option value="summarizer">summarizer</option>
+            </select>
+
+            <select id="bulkTierSel" aria-label="Bulk set tier" onchange="if(this.value){runBulk({tier:this.value==='__none__'?null:this.value});this.value='';}" class="h-7 px-2 rounded bg-white border hair text-xs">
+              <option value="">Set tier…</option>
+              <option value="fast">fast</option>
+              <option value="balanced">balanced</option>
+              <option value="strong">strong</option>
+              <option value="__none__">— (clear)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Bulk result notice -->
+        <div id="bulkResultNotice" class="hidden card px-3.5 py-2 text-xs flex items-start justify-between gap-2" style="background:var(--pill-warning-bg);color:var(--pill-warning-ink);border-color:#fde68a">
+          <div id="bulkResultText"></div>
+          <button type="button" onclick="document.getElementById('bulkResultNotice').classList.add('hidden')" class="text-xs underline shrink-0">Tutup</button>
+        </div>
+
+        <!-- Models table -->
+        <div class="card overflow-hidden">
+          <div class="overflow-x-auto custom-scroll">
+            <table class="w-full text-left border-collapse orch-table">
+              <thead>
+                <tr>
+                  <th class="w-9 text-center">
+                    <input id="chkSelectAllModels" type="checkbox" onchange="toggleSelectAllFiltered(this.checked)" aria-label="Select all filtered models">
+                  </th>
+                  <th class="w-16">Aktif</th>
+                  <th>Model ID</th>
+                  <th>Roles</th>
+                  <th class="w-28">Tier</th>
+                  <th class="w-20 num text-right">Ctx</th>
+                  <th class="w-36" title="Tools · Vision · Reasoning · Search · PDF (? = NULL / unknown)">Capabilities</th>
+                  <th class="w-16 text-right">Detail</th>
+                </tr>
+              </thead>
+              <tbody id="modelsTbody">
+                <tr><td colspan="8" class="py-8 text-center text-xs" style="color:var(--muted)">Memuat model…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="px-4 py-2.5 border-t hair flex items-center justify-between text-xs" style="color:var(--muted)">
+            <span id="modelsFootCount" class="num">0 model ditampilkan</span>
+            <span>Legend capabilities: <span class="cap-badge cap-on">T</span> supported · <span class="cap-badge cap-off">·</span> false · <span class="cap-badge cap-null">?</span> NULL (unknown)</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================ -->
+      <!-- TAB 2: ORCHESTRATOR (#tab-orchestrator)                          -->
+      <!-- ================================================================ -->
+      <section id="tab-orchestrator" class="hidden space-y-4">
+        <div class="flex items-baseline justify-between flex-wrap gap-3">
+          <div>
+            <h1 class="font-semibold tracking-tight" style="font-size:24px;line-height:1.2">Orchestrator configuration</h1>
+            <p class="text-sm mt-1" style="color:var(--muted)">Routing kill switch, role chains, model rewrite mode, and live <code class="mono text-xs">&lt;orch-roster&gt;</code> injection</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="settingsDirtyState" class="text-xs" style="color:var(--muted)">Tersimpan</span>
+            <button type="button" id="btnSaveSettings" onclick="saveSettings()" class="h-8 px-4 rounded-md btn-primary text-xs font-medium">Save settings</button>
+          </div>
+        </div>
+
+        <!-- Warnings banner list -->
+        <div id="orchWarningsBox" class="space-y-2"></div>
+
+        <!-- Top settings grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- Master switch & commands -->
+          <div class="card p-4 space-y-3.5">
+            <div class="flex items-center justify-between pb-2.5 border-b hair">
+              <div>
+                <div class="font-semibold text-sm">Master switch (`enabled`)</div>
+                <div class="text-xs" style="color:var(--muted)">Matikan untuk fail-open semua request `/v1/responses` tanpa routing</div>
+              </div>
+              <label class="switch">
+                <input id="setEnabled" type="checkbox" onchange="markSettingsDirty()">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between pb-2.5 border-b hair">
+              <div>
+                <div class="font-medium text-xs">Inject `&lt;orch-roster&gt;` (`inject_roster`)</div>
+                <div class="text-xs" style="color:var(--muted)">Sisipkan daftar worker/fixer aktif ke giliran orchestrator</div>
+              </div>
+              <label class="switch">
+                <input id="setInjectRoster" type="checkbox" onchange="markSettingsDirty()">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="setTriggerCmd" class="block text-xs font-medium mb-1">Trigger command</label>
+                <input id="setTriggerCmd" type="text" oninput="markSettingsDirty()" placeholder="/orch-plan" class="w-full h-8 px-2.5 rounded-md bg-white border hair text-xs mono">
+              </div>
+              <div>
+                <label for="setOffCmd" class="block text-xs font-medium mb-1">Off command</label>
+                <input id="setOffCmd" type="text" oninput="markSettingsDirty()" placeholder="/orch-off" class="w-full h-8 px-2.5 rounded-md bg-white border hair text-xs mono">
+              </div>
+              <div>
+                <label for="setMaxAttempts" class="block text-xs font-medium mb-1">Max attempts (1–10)</label>
+                <input id="setMaxAttempts" type="number" min="1" max="10" oninput="markSettingsDirty()" class="w-full h-8 px-2.5 rounded-md bg-white border hair text-xs num">
+              </div>
+              <div>
+                <label for="setMaxParallel" class="block text-xs font-medium mb-1">Max parallel (1–16)</label>
+                <input id="setMaxParallel" type="number" min="1" max="16" oninput="markSettingsDirty()" class="w-full h-8 px-2.5 rounded-md bg-white border hair text-xs num">
+              </div>
+            </div>
+          </div>
+
+          <!-- Rewrite mode + Default worker -->
+          <div class="card p-4 flex flex-col justify-between space-y-4">
+            <div class="space-y-2.5">
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                <div>
+                  <div class="font-semibold text-sm">Rewrite mode (`rewrite_mode`)</div>
+                  <div class="text-xs" style="color:var(--muted)">Kontrol layer mana yang menulis `body.model` final sebelum ke 9router</div>
+                </div>
+                <span id="orchMismatch24hBadge" class="pill pill-neutral text-xs num">24h mismatch: 0</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1" role="radiogroup" aria-label="Rewrite mode">
+                <div id="rwCardBody" onclick="setRewriteMode('body')" class="rewrite-option active cursor-pointer">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="rewrite_mode" value="body" checked onchange="setRewriteMode('body')">
+                    <span class="font-semibold text-xs mono">body</span>
+                    <span class="pill pill-neutral text-[10px]">default</span>
+                  </label>
+                  <p class="text-xs mt-1 leading-snug" style="color:var(--muted)">Orchestration menulis `request.model` + header `x-orch-model`; connection memverifikasi.</p>
+                </div>
+
+                <div id="rwCardHeader" onclick="setRewriteMode('header')" class="rewrite-option cursor-pointer">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="rewrite_mode" value="header" onchange="setRewriteMode('header')">
+                    <span class="font-semibold text-xs mono">header</span>
+                  </label>
+                  <p class="text-xs mt-1 leading-snug" style="color:var(--muted)">Orchestration hanya kirim `x-orch-model`; connection layer menulis `body.model`.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t hair space-y-2">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <div class="font-medium text-xs">Spread tasks across workers (`spread_load`)</div>
+                  <div class="text-xs" style="color:var(--muted)">Semua worker aktif setara (tanpa primary/default); orchestrator menyebar tiap task ke model berbeda sesuai beban &amp; kemampuan</div>
+                </div>
+                <label class="switch shrink-0">
+                  <input id="setSpreadLoad" type="checkbox" checked onchange="onSpreadLoadToggle()">
+                  <span class="switch-slider"></span>
+                </label>
+              </div>
+              <div id="defaultWorkerWrap" class="hidden pt-1 space-y-1">
+                <label for="quickDefaultWorker" class="block text-xs font-medium">Optional default worker (`isDefaultWorker`)</label>
+                <select id="quickDefaultWorker" onchange="changeDefaultWorker(this.value)" class="w-full h-8 px-2.5 rounded-md bg-white border hair text-xs mono">
+                  <option value="">— tanpa default worker —</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Three Equal Peer Pools: Orchestrators, Workers, Fixers (zero backup/fallback hierarchy) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+          <!-- 1. Available Orchestrator Pool -->
+          <div class="card p-4 space-y-3">
+            <div>
+              <div class="flex items-center justify-between">
+                <h2 class="font-semibold text-sm">1. Orchestrator pool</h2>
+                <span id="cntActiveOrchestrators" class="pill pill-neutral text-[11px] num">0 available</span>
+              </div>
+              <p class="text-xs mt-0.5" style="color:var(--muted)">Semua model `orchestrator` aktif siap dipilih saat `/orch-plan` dipanggil (lewat model picker IDE atau `/orch-plan @&lt;model&gt;`) — tanpa urutan primary/fallback.</p>
+            </div>
+            <ul id="pool-orchestrators" class="space-y-1.5 min-h-[44px]"></ul>
+          </div>
+
+          <!-- 2. Available Worker Pool -->
+          <div class="card p-4 space-y-3">
+            <div>
+              <div class="flex items-center justify-between">
+                <h2 class="font-semibold text-sm">2. Worker pool</h2>
+                <span id="cntActiveWorkers" class="pill pill-neutral text-[11px] num">0 available</span>
+              </div>
+              <p class="text-xs mt-0.5" style="color:var(--muted)">Semua model `worker` aktif siap ditugaskan orchestrator secara merata ke tiap task.</p>
+            </div>
+            <ul id="pool-workers" class="space-y-1.5 min-h-[44px]"></ul>
+          </div>
+
+          <!-- 3. Available Fixer Pool -->
+          <div class="card p-4 space-y-3">
+            <div>
+              <div class="flex items-center justify-between">
+                <h2 class="font-semibold text-sm">3. Fixer pool</h2>
+                <span id="cntActiveFixers" class="pill pill-neutral text-[11px] num">0 available</span>
+              </div>
+              <p class="text-xs mt-0.5" style="color:var(--muted)">Semua model `fixer` aktif lintas `family` siap dipilih orchestrator saat task worker butuh eskalasi.</p>
+            </div>
+            <ul id="pool-fixers" class="space-y-1.5 min-h-[44px]"></ul>
+          </div>
+        </div>
+
+        <!-- Live <orch-roster> preview -->
+        <div class="card p-4 space-y-2.5">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h2 class="font-semibold text-sm">Live <code class="mono text-xs">&lt;orch-roster&gt;</code> preview</h2>
+              <span id="rosterVersionBadge" class="pill pill-neutral mono text-[11px]">v=------</span>
+              <span id="rosterTokensBadge" class="text-xs num" style="color:var(--muted)">~0 tokens</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="refreshRosterPreview()" class="h-7 px-2.5 rounded bg-white border hair text-xs font-medium">Refresh</button>
+              <button type="button" onclick="copyRosterText()" class="h-7 px-2.5 rounded bg-white border hair text-xs font-medium">Copy</button>
+            </div>
+          </div>
+          <pre id="rosterPreviewPre" class="p-3 rounded-lg text-xs mono overflow-x-auto custom-scroll leading-relaxed" style="background:var(--raised);border:1px solid var(--hair)"></pre>
+        </div>
+      </section>
+
+      <!-- ================================================================ -->
+      <!-- TAB 3: MONITOR (#tab-monitor)                                    -->
+      <!-- ================================================================ -->
+      <section id="tab-monitor" class="hidden space-y-4">
+        <div class="flex items-baseline justify-between flex-wrap gap-3">
+          <div>
+            <h1 class="font-semibold tracking-tight" style="font-size:24px;line-height:1.2">Plan &amp; call monitor</h1>
+            <p class="text-sm mt-1" style="color:var(--muted)">Live execution telemetry grouped by plan, task attempt, model rewrite verification, and latency</p>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <label class="inline-flex items-center gap-1.5 text-xs cursor-pointer select-none">
+              <input id="chkMonitorPoll" type="checkbox" checked onchange="toggleMonitorAutoPoll(this.checked)">
+              <span>Auto-refresh (3s)</span>
+            </label>
+            <span id="monitorLastUpd" class="text-xs num" style="color:var(--muted)">—</span>
+            <button type="button" onclick="loadMonitor(true)" class="h-8 px-3 rounded-md bg-white border hair text-xs font-medium">Refresh</button>
+          </div>
+        </div>
+
+        <!-- Plans summary table -->
+        <div class="card overflow-hidden">
+          <div class="px-4 py-2.5 border-b hair flex items-center justify-between">
+            <h2 class="font-semibold text-sm">Plans (`orch_calls` non-passthrough)</h2>
+            <span id="plansCountLabel" class="text-xs num" style="color:var(--muted)">0 plans</span>
+          </div>
+          <div class="overflow-x-auto custom-scroll">
+            <table class="w-full text-left border-collapse orch-table">
+              <thead>
+                <tr>
+                  <th>Plan ID</th>
+                  <th class="w-40 num">Last activity</th>
+                  <th class="w-20 num text-right">Tasks</th>
+                  <th class="w-20 num text-right">Calls</th>
+                  <th class="w-28 num text-right">Tokens</th>
+                  <th class="w-24 num text-right">Fallbacks</th>
+                  <th class="w-24 num text-right">Errors</th>
+                  <th class="w-24 num text-right">Mismatches</th>
+                </tr>
+              </thead>
+              <tbody id="plansTbody">
+                <tr><td colspan="8" class="py-6 text-center text-xs" style="color:var(--muted)">Belum ada data plan</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Per-plan calls table -->
+        <div class="card overflow-hidden">
+          <div class="px-4 py-2.5 border-b hair flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <h2 class="font-semibold text-sm">Calls for plan:</h2>
+              <span id="selectedPlanBadge" class="mono text-xs font-semibold" style="color:var(--accent)">— pilih baris plan di atas —</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs">
+              <span class="pill pill-negative text-[11px]">Mismatch / Error</span>
+              <span class="pill pill-warning text-[11px]">Fallback</span>
+            </div>
+          </div>
+          <div class="overflow-x-auto custom-scroll">
+            <table class="w-full text-left border-collapse orch-table">
+              <thead>
+                <tr>
+                  <th class="w-28 num">Time</th>
+                  <th class="w-24">Kind</th>
+                  <th class="w-24">Task / Att</th>
+                  <th class="w-24">Role</th>
+                  <th>Model (`requested` → `routed` → `applied`)</th>
+                  <th class="w-28">Rewritten by</th>
+                  <th class="w-32">Fallback</th>
+                  <th class="w-16 num text-right">Status</th>
+                  <th class="w-28 num text-right">TTFB / Total</th>
+                  <th class="w-28 num text-right">In / Out tok</th>
+                  <th>Error</th>
+                </tr>
+              </thead>
+              <tbody id="callsTbody">
+                <tr><td colspan="11" class="py-6 text-center text-xs" style="color:var(--muted)">Klik salah satu plan di atas untuk melihat rincian call</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================ -->
+      <!-- TAB 4: ROUTE TESTER (#tab-tester)                                -->
+      <!-- ================================================================ -->
+      <section id="tab-tester" class="hidden space-y-4">
+        <div class="flex items-baseline justify-between flex-wrap gap-3">
+          <div>
+            <h1 class="font-semibold tracking-tight" style="font-size:24px;line-height:1.2">Route dry-run tester</h1>
+            <p class="text-sm mt-1" style="color:var(--muted)">Simulate `Detector → Router → Adapter → Roster` without forwarding upstream to 9router</p>
+          </div>
+          <button type="button" onclick="runDryRun()" class="h-8 px-4 rounded-md btn-primary text-xs font-medium">▶ Run dry-run</button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+          <!-- Input card -->
+          <div class="card p-4 space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span class="text-xs font-semibold">Input (marker line, `/orch-plan` prompt, or `/v1/responses` JSON)</span>
+              <button type="button" onclick="document.getElementById('dryRunInput').value='';document.getElementById('dryRunResultBox').classList.add('hidden');" class="text-xs underline" style="color:var(--muted)">Clear</button>
+            </div>
+
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" onclick="loadTesterSample('orch')" class="h-7 px-2.5 rounded bg-white border hair text-xs hover:bg-gray-50">Sample: /orch-plan</button>
+              <button type="button" onclick="loadTesterSample('worker')" class="h-7 px-2.5 rounded bg-white border hair text-xs hover:bg-gray-50">Sample: Worker marker</button>
+              <button type="button" onclick="loadTesterSample('unknown')" class="h-7 px-2.5 rounded bg-white border hair text-xs hover:bg-gray-50">Sample: Unknown agent fallback</button>
+              <button type="button" onclick="loadTesterSample('normal')" class="h-7 px-2.5 rounded bg-white border hair text-xs hover:bg-gray-50">Sample: Normal passthrough</button>
+            </div>
+
+            <textarea id="dryRunInput" aria-label="Dry-run input payload" rows="13" spellcheck="false" placeholder="[[ORCH v=1 plan=demo task=T1 role=worker agent=ag/gemini-4-argon-high attempt=1]]&#10;Implement feature X..." class="w-full p-3 rounded-lg border hair bg-white text-xs mono leading-relaxed"></textarea>
+
+            <div class="flex items-center justify-between">
+              <span id="dryRunInputHint" class="text-xs" style="color:var(--muted)">JSON objek valid dikirim sebagai body; teks biasa dikirim sebagai `__rawText`.</span>
+              <button type="button" onclick="runDryRun()" class="h-8 px-3.5 rounded-md btn-primary text-xs font-medium">Dry-run</button>
+            </div>
+          </div>
+
+          <!-- Result card -->
+          <div class="card p-4 space-y-3">
+            <div class="flex items-center justify-between border-b hair pb-2.5">
+              <h2 class="font-semibold text-sm">Dry-run evaluation</h2>
+              <span id="dryRunKindBadge" class="pill pill-neutral mono text-xs">—</span>
+            </div>
+
+            <div id="dryRunEmpty" class="py-8 text-center text-xs" style="color:var(--muted)">
+              Pilih sample atau tempel payload, lalu klik <strong>Dry-run</strong>.
+            </div>
+
+            <div id="dryRunResultBox" class="hidden space-y-3 text-xs">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 rounded-lg" style="background:var(--raised)">
+                <div>
+                  <div style="color:var(--muted)">Requested → Routed model</div>
+                  <div id="drModelFlow" class="mono font-semibold mt-0.5 break-all">—</div>
+                </div>
+                <div>
+                  <div style="color:var(--muted)">Fallback / Fail-open</div>
+                  <div id="drFallbackInfo" class="mono mt-0.5">—</div>
+                </div>
+              </div>
+
+              <div id="drMarkerWrap" class="hidden">
+                <div class="font-medium mb-1" style="color:var(--muted)">Detected marker / session</div>
+                <div id="drMarkerText" class="mono p-2 rounded border hair bg-white break-all"></div>
+              </div>
+
+              <div>
+                <div class="font-medium mb-1" style="color:var(--muted)">Warnings</div>
+                <div id="drWarningsList" class="space-y-1"></div>
+              </div>
+
+              <div>
+                <div class="font-medium mb-1" style="color:var(--muted)">Adapter changes</div>
+                <div id="drAdapterList" class="space-y-1"></div>
+              </div>
+
+              <div>
+                <div class="font-medium mb-1" style="color:var(--muted)">Outgoing `x-orch-*` headers</div>
+                <pre id="drHeadersPre" class="p-2.5 rounded border hair bg-white mono text-[11px] overflow-x-auto"></pre>
+              </div>
+
+              <div id="drRosterWrap" class="hidden">
+                <div class="font-medium mb-1" style="color:var(--muted)">Injected `&lt;orch-roster&gt;`</div>
+                <pre id="drRosterPre" class="p-2.5 rounded border hair mono text-[11px] overflow-x-auto max-h-48 custom-scroll" style="background:var(--raised)"></pre>
+              </div>
+
+              <details class="pt-1">
+                <summary class="cursor-pointer text-xs font-medium" style="color:var(--muted)">Raw dry-run JSON response</summary>
+                <pre id="drRawJsonPre" class="mt-1.5 p-2.5 rounded border hair mono text-[11px] overflow-x-auto max-h-60 custom-scroll" style="background:var(--raised)"></pre>
+              </details>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Sheet footer -->
+  <footer class="px-6 py-2.5 border-t hair flex flex-wrap items-center justify-between gap-2 text-xs" style="color:var(--muted)">
+    <div>Orchestration layer · `127.0.0.1:20131/orch`</div>
+    <div class="flex items-center gap-3">
+      <a href="/orch/api/health" target="_blank" rel="noopener" class="hover:underline mono">/orch/api/health</a>
+      <a href="/orch/roster" target="_blank" rel="noopener" class="hover:underline mono">/orch/roster</a>
+    </div>
+  </footer>
+</div>
+</div>
+</div>
+
+<!-- Model Row Detail Modal / Drawer -->
+<dialog id="dlgModelDetail" class="rounded-xl p-0 border hair max-w-2xl w-full" style="background:var(--surface);color:var(--text)">
+  <div class="p-5 space-y-4">
+    <div class="flex items-start justify-between gap-3 border-b hair pb-3">
+      <div>
+        <div class="text-xs" style="color:var(--muted)">Model configuration &amp; raw metadata</div>
+        <h3 id="detModelId" class="font-semibold text-base mono break-all mt-0.5">—</h3>
+      </div>
+      <button type="button" onclick="closeModelDetail()" class="h-7 px-2.5 rounded border hair text-xs">Close</button>
+    </div>
+
+    <div id="detBadgesRow" class="flex flex-wrap items-center gap-1.5 text-xs"></div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div>
+        <label for="detFamily" class="block text-xs font-medium mb-1">Family (`claude`, `gemini`, `gpt`…)</label>
+        <input id="detFamily" type="text" placeholder="e.g. claude" class="w-full h-8 px-2.5 rounded-md border hair bg-white text-xs mono">
+      </div>
+      <div>
+        <label for="detPriority" class="block text-xs font-medium mb-1">Priority (smaller = higher)</label>
+        <input id="detPriority" type="number" step="1" class="w-full h-8 px-2.5 rounded-md border hair bg-white text-xs num">
+      </div>
+      <div class="flex items-end pb-1">
+        <label class="inline-flex items-center gap-2 text-xs font-medium cursor-pointer select-none">
+          <input id="detDefaultWorker" type="checkbox">
+          <span>Default worker (`isDefaultWorker`)</span>
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <label for="detNotes" class="block text-xs font-medium mb-1">Notes (ditampilkan di `&lt;orch-roster&gt;`)</label>
+      <textarea id="detNotes" rows="2" placeholder="Catatan singkat kekuatan model, batas kuota, atau spesialisasi…" class="w-full px-3 py-2 rounded-md border hair bg-white text-xs"></textarea>
+    </div>
+
+    <div>
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-xs font-medium">Read-only `rawJson` (9router `/v1/models`)</span>
+        <span id="detSyncTimestamps" class="text-[11px] num" style="color:var(--muted)"></span>
+      </div>
+      <pre id="detRawJson" class="max-h-56 overflow-auto custom-scroll p-3 rounded-lg text-[11px] mono leading-relaxed" style="background:var(--raised);border:1px solid var(--hair)"></pre>
+    </div>
+
+    <div class="flex items-center justify-end gap-2 pt-2 border-t hair">
+      <button type="button" onclick="closeModelDetail()" class="h-8 px-3 rounded-md bg-white border hair text-xs">Cancel</button>
+      <button type="button" onclick="saveModelDetail()" class="h-8 px-4 rounded-md btn-primary text-xs font-medium">Save changes</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Toast stack -->
+<div id="toast" class="fixed right-4 bottom-4 z-50 flex flex-col gap-2 max-w-sm"></div>
+
+<script src="/orch/assets/orch.js"></script>
+</body>
+</html>
