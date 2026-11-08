@@ -1,0 +1,214 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "all-in-combos",
+      "object": "model",
+      "owned_by": "combo",
+      "capabilities": {
+        "vision": true,
+        "pdf": true,
+        "audioInput": true,
+        "videoInput": true,
+        "imageOutput": false,
+        "audioOutput": false,
+        "search": true,
+        "tools": true,
+        "reasoning": true,
+        "thinkingFormat": "gemini-level",
+        "thinkingCanDisable": false,
+        "thinkingRange": null,
+        "contextWindow": 1000000,
+        "maxOutput": 384000
+      },
+      "context_length": 1000000,
+      "max_completion_tokens": 65535
+    },
+    {
+      "id": "mandor",
+      "object": "model",
+      "owned_by": "combo",
+      "capabilities": {
+        "vision": true,
+        "pdf": true,
+        "audioInput": false,
+        "videoInput": true,
+        "imageOutput": false,
+        "audioOutput": false,
+        "search": true,
+        "tools": true,
+        "reasoning": true,
+        "thinkingFormat": "claude-budget",
+        "thinkingCanDisable": true,
+        "thinkingRange": null,
+        "contextWindow": 200000,
+        "maxOutput": 131072
+      },
+      "context_length": 200000,
+      "max_completion_tokens": 64000
+    },
+    {
+      "id": "kuli",
+      "object": "model",
+      "owned_by": "combo",
+      "capabilities": {
+        "vision": true,
+        "pdf": false,
+        "audioInput": true,
+        "videoInput": true,
+        "imageOutput": false,
+        "audioOutput": false,
+        "search": true,
+        "tools": true,
+        "reasoning": true,
+        "thinkingFormat": "gemini-level",
+        "thinkingCanDisable": false,
+        "thinkingRange": null,
+        "contextWindow": 1000000,
+        "maxOutput": 384000
+      },
+      "context_length": 1000000,
+      "max_completion_tokens": 65536
+    },
+    {
+      "id": "oc",
+      "object": "model",
+      "owned_by": "combo",
+      "capabilities": {
+        "vision": true,
+        "pdf": true,
+        "audioInput": true,
+        "videoInput": true,
+        "imageOutput": false,
+        "audioOutput": false,
+        "search": false,
+        "tools": true,
+        "reasoning": true,
+        "thinkingFormat": "openai",
+        "thinkingCanDisable": true,
+        "thinkingRange": null,
+        "contextWindow": 1048576,
+        "maxOutput": 131072
+      },
+      "context_length": 1048576,
+      "max_completion_tokens": 131072
+    },
+    {
+      "id": "muse-family",
+      "object": "model",
+      "owned_by": "combo",
+      "capabilities": {
+        "vision": true,
+        "pdf": false,
+        "audioInput": false,
+        "videoInput": false,
+        "imageOutput": false,
+        "audioOutput": false,
+        "search": false,
+        "tools": true,
+        "reasoning": true,
+        "thinkingFormat": "openai",
+        "thinkingCanDisable": true,
+        "thinkingRange": null,
+        "contextWindow": 200000,
+        "maxOutput": 131072
+      },
+      "context_length": 200000,
+      "max_completion_tokens": 64000
+    },
+    {
+      "id": "gu/bytedance/seedance-2.5",
+      "object": "model",
+      "owned_by": "gu",
+      "capabilities": {
+        "vision": false,
+        "pdf": false,
+        "audioInput": false,
+        "videoInput": false,
+        "imageOutput": false,
+        "audioOutput": false,
+        "search": false,
+        "tools": true,
+        "reasoning": false,
+        "thinkingFormat": null,
+        "thinkingCanDisable": true,
+        "thinkingRange": null,
+        "thinkingEffortSupported": false,
+        "contextWindow": 200000,
+        "maxOutput": 64000
+      },
+      "context_length": 200000,
+      "max_completion_tokens": 64000
+    },
+    {
+      "id": "gu/gpt-5.6-sol",
+      "object": "model",
+      "owned_by": "gu",
+      "capabilities": {
+        "vision": true,
+        "pdf": false,
+        "audioInput": false,
+        "videoInput": false,
+        "imageOutput": false,
+        "audioOutput": false,
+        "search": true,
+        "tools": true,
+        "reasoning": true,
+        "thinkingFormat": "openai",
+        "thinkingCanDisable": true,
+        "thinkingRange": null,
+        "thinkingEffortSupported": false,
+        "contextWindow": 1050000,
+        "maxOutput": 128000
+      },
+      "context_length": 1050000,
+      "max_completion_tokens": 128000
+    },
+    {
+      "id": "gu/gpt-5.6-luna",
+      "object": "model",
+      "owned_by": "gu",
+      "capabilities": {
+        "vision": true,
+        "pdf": false,
+        "audioInput": false,
+        "videoInput": false,
+        "imageOutput": false,
+        "audioOutput": false,
+        "search": true,
+        "tools": true,
+        "reasoning": true,
+        "thinkingFormat": "openai",
+        "thinkingCanDisable": true,
+        "thinkingRange": null,
+        "thinkingEffortSupported": false,
+        "contextWindow": 1050000,
+        "maxOutput": 128000
+      },
+      "context_length": 1050000,
+      "max_completion_tokens": 128000
+    },
+    {
+      "id": "test/no-caps-model",
+      "object": "model",
+      "owned_by": "test"
+    },
+    {
+      "id": "test/no-tools-no-vision",
+      "object": "model",
+      "owned_by": "test",
+      "capabilities": {
+        "vision": false,
+        "pdf": false,
+        "tools": false,
+        "reasoning": false,
+        "thinkingEffortSupported": false,
+        "thinkingRange": null,
+        "contextWindow": 64000,
+        "maxOutput": 4096
+      },
+      "context_length": 64000,
+      "max_completion_tokens": 4096
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "input": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "text": "<ide-context>\nActive document: /Users/accountmac/.config/9router-proxy/context_layer/dashboard/valiant.html\n\nThe following section contains general user-provided instructions and preferences on to how do things. These are **CRITICAL**.\nIdentify the parts of these instructions that are relevant to the current request, and **follow them closely**.\nIf these instructions conflict with the system instr\n...[ide-context truncated]...\n</ide-context>\n\n/plan\n\nI want to build new layer named orchestration layer that will do agent orchestration, I already have the plan wrote in bahasa. Take a look at it and let me know if you have any questions @Orchestration Layer untuk 9router Proxy Rencana Implementasi.md\n\ncontinue",
+          "type": "input_text"
+        }
+      ]
+    }
+  ],
+  "model": "ag/gemini-4-argon-high",
+  "store": false,
+  "tools": [
+    {
+      "type": "function",
+      "name": "adb_shell_input",
+      "description": "Sends UI input events (tap, swipe, keyevent, or text typing) via `adb shell input` to the currently selected Android dev",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "type": "function",
+      "name": "analyze_file",
+      "description": "Analyzes a file for errors and warnings using the editor's inspections\n\nUse this tool to identify coding issues, syntax ",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "type": "function",
+      "name": "ask_user",
+      "description": "Asks the user a question with a set of predefined options and returns the answer.\n\nThis tool is useful when you need to ",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "type": "function",
+      "name": "code_search",
+      "description": "Searches an index of the user's code base\n\nThe index is created by Lucene, and contains a field for the file name and on",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "type": "function",
+      "name": "fetch_android_docs",
+      "description": "Returns full documents from the high quality subset of the official Android Developer documentation\n\nUse the `search_and",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "type": "function",
+      "name": "find_declaration",
+      "description": "Finds the exact definition site of a symbol (class, method, variable, field, constant, or Android resource/color) across",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ],
+  "stream": true,
+  "instructions": "<system_prompt>\n\n# Role & Persona\n\nYou are an expert Android developer assisting a user within the Android Studio IDE.\nYour goal is to be helpful and concise.\nYou should consider every request as coming from an Android app developer needing help with Android development.\n\n# Tool Usage Instructions\n\n## Tool Usage Instructions\n\nThe provided Python library allows you to interact with the IDE.\n- **Plan First:** Think about the information required to satisfy the request, then check if the available tools can provide it.\n- **Parallel Execution:** You can invoke multiple tools at the same time. This is much more efficient as it reduces round-trips with the IDE.\n\n### Parallelism Rules:\n\n* **Bundle Tool Calls:** You MUST call tools in parallel whenever possible to reduce latency.\n* **Discovery Phase Parallelism:** During the initial research phase, always bundle multiple `find_files`, `grep`, `find_declaration`, and `find_usages` calls if they are independent.\n* **Batch Reading:** Once files are identified, read multiple related files (e.g., a class and its test) in a single parallel block.\n* **Parallel-Safe:** Reading, writing (to different files), analyzing, and searching can be done saf\n...[truncated for fixture; includes example marker [[ORCH v=1 plan=<id> task=<T-id> role=worker agent=<id> attempt=1]]]...\nmple \"firebase\", \"github\", \"pull request\", \"pr\", \"issue\", \"figma\"), or when the user writes #tools:firebase / #tools:github / #tools:figma or #tools:all.\nIf the task needs one of them, tell the user to mention it in their next message instead of assuming the tool does not exist.\n</tool_availability>",
+  "parallel_tool_calls": true
+}
