@@ -89,4 +89,4 @@ async function setBookmark(id, bookmarked, note) {
   return r ? r.rowCount : null;
 }
 
-module.exports = { isEnabled, ensureSchema, logProxyRequest, close, query, setBookmark };
+module.exports = { isEnabled, getPool, ensureSchema, logProxyRequest, close, query, setBookmark };
