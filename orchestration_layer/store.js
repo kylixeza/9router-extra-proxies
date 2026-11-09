@@ -97,6 +97,8 @@ function createStore(opts = {}) {
   const models = new Map();
   let settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
   let callsMem = []; // used when pg is null (hermetic tests) and for fast recent fallback
+  const inflightCalls = new Map();
+  let nextInflightId = 1;
   let lastSyncMeta = null;
   let loaded = false;
 
@@ -453,6 +455,49 @@ function createStore(opts = {}) {
     return getSettings();
   }
 
+  // ponytail: in-memory live calls expire after five minutes; use shared storage for multi-process tracking.
+  function pruneInflight(nowMs) {
+    for (const [id, item] of inflightCalls) {
+      if (nowMs - item.startedAtMs > 300000) inflightCalls.delete(id);
+    }
+  }
+
+  function beginCall(entry = {}) {
+    if (!entry || entry.kind === 'passthrough' || entry.kind === 'PASSTHROUGH') return null;
+    const nowMs = Date.now();
+    pruneInflight(nowMs);
+    const callId = `live-${nowMs}-${nextInflightId++}`;
+    inflightCalls.set(callId, {
+      call_id: callId,
+      started_at: new Date(nowMs).toISOString(),
+      startedAtMs: nowMs,
+      kind: entry.kind || 'subagent',
+      plan_id: entry.planId || null,
+      task_key: entry.taskKey || null,
+      attempt: entry.attempt ?? null,
+      role: entry.role || (entry.kind === 'orchestrator' || entry.kind === 'ORCH' ? 'orchestrator' : 'worker'),
+      requested_model: entry.requestedModel || null,
+      routed_model: entry.routedModel || null,
+      fallback_reason: entry.fallbackReason || null,
+    });
+    return callId;
+  }
+
+  function endCall(callId) {
+    if (callId) inflightCalls.delete(callId);
+  }
+
+  function listActiveCalls(recentWindowMs = 30000) {
+    const nowMs = Date.now();
+    pruneInflight(nowMs);
+    const inflight = [...inflightCalls.values()].map(({ startedAtMs, ...item }) => ({
+      ...item, elapsed_ms: Math.max(0, nowMs - startedAtMs),
+    }));
+    const recentCalls = callsMem.filter(c => c.kind !== 'passthrough' && nowMs - Date.parse(c.ts) <= recentWindowMs)
+      .sort((a, b) => Date.parse(b.ts) - Date.parse(a.ts)).slice(0, 25);
+    return { inflight, recentCalls, serverTime: new Date(nowMs).toISOString() };
+  }
+
   function logCall(entry) {
     const row = {
       id: callsMem.length + 1,
@@ -608,6 +653,9 @@ function createStore(opts = {}) {
     getSettings,
     putSettings,
     logCall,
+    beginCall,
+    endCall,
+    listActiveCalls,
     listPlans,
     listPlanCalls,
     countMismatches24h,

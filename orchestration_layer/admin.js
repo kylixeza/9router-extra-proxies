@@ -194,6 +194,13 @@ function createAdminHandler(opts = {}) {
         });
       }
 
+      if (req.method === 'GET' && apiPath === '/orch/api/live') {
+        const live = typeof store.listActiveCalls === 'function'
+          ? store.listActiveCalls()
+          : { inflight: [], recentCalls: [], serverTime: new Date().toISOString() };
+        return sendJson(res, 200, live);
+      }
+
       if (req.method === 'GET' && apiPath === '/orch/api/plans') {
         const limit = Number(parsedUrl.searchParams.get('limit') || 50);
         const plans = await store.listPlans(Number.isFinite(limit) ? limit : 50);

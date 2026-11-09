@@ -432,6 +432,48 @@
           </div>
         </div>
 
+        <!-- Symphony Orchestra Live Stage -->
+        <div class="card overflow-hidden">
+          <div class="px-4 py-3 border-b hair flex flex-wrap items-center justify-between gap-3" style="background:var(--raised)">
+            <div class="flex items-center gap-2.5 flex-wrap">
+              <span class="font-semibold text-sm">🎻 Symphony Orchestra Hall</span>
+              <span id="orchStageStatusBadge" class="pill pill-neutral text-xs">Standby · Stage Ready</span>
+              <span id="orchNowPlayingChord" class="pill pill-neutral mono text-[11px]">Classical / Baroque: D Major (112 BPM)</span>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <button type="button" id="orchSoundBtn" onclick="window.OrchSymphony && window.OrchSymphony.toggleSound()" class="cap-filter-pill on inline-flex items-center gap-1" title="Toggle real-time Web Audio instrument synthesizer">
+                <span>🔊</span><span>Sound ON</span>
+              </button>
+              <div class="flex items-center gap-1.5 px-2 h-[26px] rounded border hair bg-white text-[11px]" title="Master volume">
+                <span style="color:var(--muted)">Vol</span>
+                <input id="orchVolumeSlider" type="range" min="0" max="1" step="0.05" value="0.45" oninput="window.OrchSymphony && window.OrchSymphony.setVolume(this.value)" class="w-16 accent-teal-700 cursor-pointer">
+              </div>
+              <select id="orchMoodSelect" aria-label="Musical mood" onchange="window.OrchSymphony && window.OrchSymphony.setMood(this.value)" class="h-[26px] px-2 rounded border hair bg-white text-[11px]">
+                <option value="classical">Classical Symphony (D Maj)</option>
+                <option value="jazz">Cool Jazz Ensemble (ii-V-I)</option>
+                <option value="lofi">Lo-Fi Chamber (Fmaj7)</option>
+              </select>
+              <button type="button" id="orchRehearsalBtn" onclick="window.OrchSymphony && window.OrchSymphony.toggleRehearsal()" class="cap-filter-pill inline-flex items-center gap-1" title="Simulate a live orchestral performance across all instruments">
+                <span>▶</span><span>Rehearsal Demo</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-3" style="background:#090d16">
+            <div id="orchStageMount"></div>
+          </div>
+
+          <div class="px-4 py-2 border-t hair flex flex-wrap items-center justify-between gap-2 text-xs" style="background:var(--surface)">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="pill pill-neutral mono text-[10px]">LIVE SCORE</span>
+              <span id="orchTickerText" class="mono text-xs truncate" style="color:var(--muted)">Symphony Orchestration Ready · Click any instrument stand to solo</span>
+            </div>
+            <div class="text-[11px]" style="color:var(--muted)">
+              Tip: Click any musician or the Conductor podium to play an instrument solo ♪
+            </div>
+          </div>
+        </div>
+
         <!-- Plans summary table -->
         <div class="card overflow-hidden">
           <div class="px-4 py-2.5 border-b hair flex items-center justify-between">
@@ -656,6 +698,7 @@
 <!-- Toast stack -->
 <div id="toast" class="fixed right-4 bottom-4 z-50 flex flex-col gap-2 max-w-sm"></div>
 
+<script src="/orch/assets/orchestra.js"></script>
 <script src="/orch/assets/orch.js"></script>
 </body>
 </html>

@@ -142,6 +142,14 @@ function requestJson(baseUrl, method, path, body) {
     assert.equal(putSet.json.settings.max_attempts, 4);
 
     // Plans & calls monitor
+    assert.equal(store.beginCall({ kind: 'passthrough' }), null);
+    const callId = store.beginCall({ kind: 'subagent', taskKey: 'T1', routedModel: 'ag/gemini-4-argon-high' });
+    const liveBefore = await requestJson(baseUrl, 'GET', '/orch/api/live');
+    assert.equal(liveBefore.status, 200);
+    assert.equal(liveBefore.json.inflight.length, 1);
+    assert.equal(liveBefore.json.inflight[0].call_id, callId);
+    assert.equal(liveBefore.json.inflight[0].routed_model, 'ag/gemini-4-argon-high');
+    assert.equal(liveBefore.json.inflight[0].task_key, 'T1');
     await store.logCall({
       kind: 'subagent',
       planId: '2026-11-07-demo',
@@ -157,6 +165,13 @@ function requestJson(baseUrl, method, path, body) {
       inputTokens: 1200,
       outputTokens: 300,
     });
+    store.endCall(callId);
+    const liveAfter = await requestJson(baseUrl, 'GET', '/orch/api/live');
+    assert.equal(liveAfter.status, 200);
+    assert.equal(liveAfter.json.inflight.length, 0);
+    assert.equal(liveAfter.json.recentCalls.length, 1);
+    assert.equal(liveAfter.json.recentCalls[0].task_key, 'T1');
+
     const plansRes = await requestJson(baseUrl, 'GET', '/orch/api/plans');
     assert.equal(plansRes.status, 200);
     assert.equal(plansRes.json.plans.length, 1);

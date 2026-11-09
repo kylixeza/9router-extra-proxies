@@ -276,12 +276,26 @@ function createOrchServer(opts = {}) {
     if (evalRes.routedModel) debugHeaders['x-orch-routed-model'] = evalRes.routedModel;
     if (evalRes.fallbackReason) debugHeaders['x-orch-fallback'] = evalRes.fallbackReason;
 
+    const marker = evalRes.marker;
+    const inflightRole = marker ? marker.role : (evalRes.kind === 'ORCH' ? 'orchestrator' : null);
+    const inflightId = evalRes.kind !== 'PASSTHROUGH' && typeof store.beginCall === 'function' ? store.beginCall({
+      kind: evalRes.kindLabel || 'passthrough',
+      planId: marker ? marker.planId : null,
+      taskKey: marker ? marker.taskKey : null,
+      attempt: marker ? marker.attempt : null,
+      role: inflightRole,
+      requestedModel: evalRes.requestedModel,
+      routedModel: evalRes.routedModel || null,
+      fallbackReason: evalRes.fallbackReason || null,
+    }) : null;
+
     let ttfbMs = null;
     let logged = false;
 
     const recordAsyncLog = (status, appliedModel, rewrittenBy, usage, errMsg) => {
       if (logged) return;
       logged = true;
+      if (inflightId && typeof store.endCall === 'function') store.endCall(inflightId);
       const latencyMs = Date.now() - startedAt;
       const routedModel = evalRes.routedModel || null;
       const mismatch = Boolean(routedModel && status !== 502 && appliedModel !== routedModel);

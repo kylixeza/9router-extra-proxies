@@ -46,6 +46,8 @@ const STATE = {
   plans: [],
   selectedPlanId: null,
   planCalls: [],
+  inflight: [],
+  recentCalls: [],
   autoPollMonitor: true,
   monitorTimer: null,
   dragChainKey: null,
@@ -310,6 +312,7 @@ async function refreshAll() {
     renderModelsTable();
     renderOrchestratorTab();
     if (STATE.tab === 'monitor') await loadMonitor(false);
+    syncOrchestraStage();
   } catch (err) {
     showErrorBanner('Gagal memuat data dashboard', err.message);
     toast(err.message, 'error');
@@ -953,6 +956,20 @@ async function copyRosterText() {
 /* Tab 3: Monitor                                                             */
 /* ========================================================================== */
 
+function syncOrchestraStage() {
+  if (typeof window !== 'undefined' && window.OrchSymphony) {
+    window.OrchSymphony.init();
+    window.OrchSymphony.updateData({
+      models: STATE.models,
+      settings: STATE.settings,
+      inflight: STATE.inflight,
+      recentCalls: STATE.recentCalls,
+      planCalls: STATE.planCalls,
+      selectedPlanId: STATE.selectedPlanId,
+    });
+  }
+}
+
 function syncMonitorTimer() {
   if (STATE.monitorTimer) {
     clearInterval(STATE.monitorTimer);
@@ -963,7 +980,7 @@ function syncMonitorTimer() {
       if (STATE.tab === 'monitor' && !document.hidden) {
         loadMonitor(false);
       }
-    }, 3000);
+    }, 1500);
   }
 }
 
@@ -974,8 +991,13 @@ function toggleMonitorAutoPoll(checked) {
 
 async function loadMonitor(manual = false) {
   try {
-    const res = await apiJson('/orch/api/plans?limit=50');
+    const [res, liveRes] = await Promise.all([
+      apiJson('/orch/api/plans?limit=50'),
+      apiJson('/orch/api/live').catch(() => ({ inflight: [], recentCalls: [] })),
+    ]);
     STATE.plans = Array.isArray(res.plans) ? res.plans : [];
+    STATE.inflight = Array.isArray(liveRes.inflight) ? liveRes.inflight : [];
+    STATE.recentCalls = Array.isArray(liveRes.recentCalls) ? liveRes.recentCalls : [];
     const updEl = document.getElementById('monitorLastUpd');
     if (updEl) updEl.textContent = `updated ${fmtTimeShort(new Date().toISOString())}`;
 
@@ -987,6 +1009,7 @@ async function loadMonitor(manual = false) {
     if (STATE.selectedPlanId) {
       await loadPlanCalls(STATE.selectedPlanId);
     }
+    syncOrchestraStage();
     if (manual) toast('Monitor diperbarui');
   } catch (err) {
     if (manual) toast(err.message, 'error');
@@ -1029,6 +1052,7 @@ async function selectPlanRow(planId) {
   STATE.selectedPlanId = planId;
   renderPlansTable();
   await loadPlanCalls(planId);
+  syncOrchestraStage();
 }
 
 async function loadPlanCalls(planId) {
