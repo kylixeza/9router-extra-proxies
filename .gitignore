@@ -2,6 +2,35 @@ node_modules/
 spilled/
 logs/
 .DS_Store
+
+# Runtime logs & dumps
+*.log
+*.err
+latest-request.json
+latest-response.json
+latest-response.txt
+9router-proxy.js.bak
+
+# Local IDE / assistant caches & databases
+.idea/
+.artifacts/
+.taste-skill/
+graphify-out/
+
+# Kiro MITM captures & certs
 kiro_layer/captures/
 kiro_layer/mitm.log
 kiro_layer/ca-bundle.pem
+kiro_layer/__pycache__/
+
+# Captured/local fixtures containing user context
+context_layer/fixtures/
+
+# Secrets & local env
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.sqlite
+*.db
