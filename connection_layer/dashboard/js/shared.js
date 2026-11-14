@@ -12,10 +12,7 @@ function toast(m, isErr = false) {
   const b = document.getElementById('toast');
   if (!b) return;
   const d = document.createElement('div');
-  d.className = 'px-3 py-2 rounded-lg text-xs font-medium ' +
-    (isErr ? 'text-white' : 'text-white border');
-  d.style.background = isErr ? 'var(--negative)' : 'var(--raised)';
-  d.style.borderColor = isErr ? 'transparent' : 'var(--border)';
+  d.className = 'toast-item' + (isErr ? ' err' : '');
   d.textContent = m;
   b.appendChild(d);
   setTimeout(() => d.remove(), 2400);
@@ -44,14 +41,11 @@ function card(l, v, sub = '', isLead = false) {
   return `<div class="kpi-cell${isLead ? ' lead' : ''}"><div class="kpi-l">${esc(l)}</div><div class="kpi-v num">${v}</div>${sub ? `<div class="kpi-sub">${sub}</div>` : ''}</div>`;
 }
 
-// one hue on data (accent blue), rest ink/grey
-const PROVIDER_COLORS = {
-  ms: '#f2f2f3', muse: '#f2f2f3',
-  kr: '#b4b4b4', claude: '#b4b4b4',
-  ag: '#4a8ad6', gemini: '#4a8ad6',
-  direct: '#949494'
-};
-
-function provColor(p) {
-  return PROVIDER_COLORS[(p || '').toLowerCase()] || '#b4b4b4';
+function statusPill(code) {
+  const n = Number(code);
+  if (!Number.isFinite(n) || n === 0) return '<span class="pill">-</span>';
+  if (n >= 500) return `<span class="pill neg num">${n}</span>`;
+  if (n >= 400) return `<span class="pill warn num">${n}</span>`;
+  if (n >= 200 && n < 300) return `<span class="pill pos num">${n}</span>`;
+  return `<span class="pill num">${n}</span>`;
 }

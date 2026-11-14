@@ -7,6 +7,7 @@ let debT = null;
 let showBookmarked = false;
 let curBmId = null;
 let curBmState = false;
+let lastGoodLogsAt = null;
 
 function debouncedLogs() {
   clearTimeout(debT);
@@ -14,6 +15,7 @@ function debouncedLogs() {
 }
 
 async function reloadLogs() {
+  const errBox = document.getElementById('logsError');
   try {
     const ps = document.getElementById('ps')?.value || '50';
     const q = document.getElementById('q')?.value || '';
@@ -21,67 +23,112 @@ async function reloadLogs() {
     const from = document.getElementById('dfrom')?.value || '';
     const to = document.getElementById('dto')?.value || '';
     const r = await fetch(`/api/conn/logs?page=${page}&pageSize=${ps}&q=${encodeURIComponent(q)}&project=${encodeURIComponent(proj)}&from=${from}&to=${to}${showBookmarked ? '&bookmarked=1' : ''}`);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();
     LOGS = j.logs || [];
     total = j.total || 0;
     page = j.page || page;
+    lastGoodLogsAt = new Date();
+    if (errBox) { errBox.className = 'hidden'; errBox.innerHTML = ''; }
     const lsrc = document.getElementById('lsrc');
     if (lsrc) lsrc.textContent = `${j.source} · ${num(total)} total`;
     renderLogs();
     renderRecentLogs();
   } catch (e) {
-    toast(e.message, true);
+    if (errBox) {
+      const last = lastGoodLogsAt ? ` Last updated ${fmtDate(lastGoodLogsAt.toISOString()).slice(11)}.` : '';
+      errBox.className = 'error-inline';
+      errBox.innerHTML = `<span>Could not load logs (${esc(e.message)}).${esc(last)}</span><button type="button" onclick="reloadLogs()" class="btn-pill btn-sm">Retry</button>`;
+    }
   }
 }
 
 function fmtTokCell(l) {
   if (l.prompt_tokens || l.completion_tokens) {
-    return `<span class="font-medium num">${fmtTok(l.prompt_tokens)}</span><span style="color:var(--muted)">/${fmtTok(l.completion_tokens)}</span>`;
+    return `<span style="font-weight:500" class="num">${fmtTok(l.prompt_tokens)}</span><span style="color:var(--muted)">/${fmtTok(l.completion_tokens)}</span>`;
   }
   if (l.est_prompt_tokens) {
-    return `<span class="text-xs num" style="color:var(--muted)" title="Estimated">~${fmtTok(l.est_prompt_tokens)}</span>`;
+    return `<span class="cell-muted num" title="Estimated">~${fmtTok(l.est_prompt_tokens)}</span>`;
   }
   return '<span style="color:var(--muted)">-</span>';
 }
 
 function renderRecentLogs() {
   const tb = document.getElementById('recentLogs');
-  if (!tb) return;
+  const mob = document.getElementById('recentLogsMobile');
+  const meta = document.getElementById('recentMeta');
   const rows = LOGS.slice(0, 6);
-  tb.innerHTML = rows.length ? rows.map(l => {
-    const prov = l.provider || (l.model && l.model.includes('/') ? l.model.split('/')[0] : 'direct');
-    const bad = Number(l.status) >= 400;
-    return `<tr class="cursor-pointer hover:opacity-90" onclick="inspect('${esc(l.id)}')">
-      <td class="py-1.5 pr-3 font-medium">${esc(l.id || '').slice(0, 8)}</td>
-      <td class="py-1.5 pr-3 whitespace-nowrap num" style="color:var(--muted)">${esc(fmtDate(l.created_at).slice(11))}</td>
-      <td class="py-1.5 pr-3 truncate max-w-[120px]">${esc(l.project_name || '-')}</td>
-      <td class="py-1.5 pr-3 truncate max-w-[200px]"><span>${esc(l.model || '-')}</span> <span class="text-xs" style="color:var(--muted)">${esc(prov)}</span></td>
-      <td class="py-1.5 pr-3 num" style="color:${bad ? 'var(--negative)' : 'var(--text)'}">${l.status ?? '-'}</td>
-      <td class="py-1.5 pr-3 num" style="color:var(--muted)">${l.ms != null ? num(l.ms) : '-'}</td>
-      <td class="py-1.5 num">${fmtTokCell(l)}</td>
-    </tr>`;
-  }).join('') : '<tr><td class="py-4 text-center" style="color:var(--muted)" colspan="7">No requests logged yet.</td></tr>';
+  if (meta) meta.textContent = total ? `latest ${rows.length} of ${num(total)}` : '0 requests';
+
+  if (tb) {
+    tb.innerHTML = rows.length ? rows.map(l => {
+      const prov = l.provider || (l.model && l.model.includes('/') ? l.model.split('/')[0] : 'direct');
+      return `<tr class="row-link" onclick="inspect('${esc(l.id)}')">
+        <td class="cell-id">${esc(l.id || '').slice(0, 8)}</td>
+        <td class="num" style="white-space:nowrap;color:var(--muted)">${esc(fmtDate(l.created_at).slice(11))}</td>
+        <td class="cell-trunc" style="max-width:140px">${esc(l.project_name || '-')}</td>
+        <td class="cell-trunc" style="max-width:240px"><span>${esc(l.model || '-')}</span> <span class="cell-muted">${esc(prov)}</span></td>
+        <td class="num">${statusPill(l.status)}</td>
+        <td class="num" style="color:var(--muted)">${l.ms != null ? num(l.ms) : '-'}</td>
+        <td class="num">${fmtTokCell(l)}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="7" style="padding:20px 0;text-align:center;color:var(--muted)">No requests logged yet.</td></tr>';
+  }
+
+  if (mob) {
+    mob.innerHTML = rows.length ? rows.map(l => {
+      const prov = l.provider || (l.model && l.model.includes('/') ? l.model.split('/')[0] : 'direct');
+      return `<div class="m-row" onclick="inspect('${esc(l.id)}')">
+        <div class="m-main">
+          <div class="m-title">${esc(l.model || '-')}</div>
+          <div class="m-sub num">${esc(l.id || '').slice(0, 8)} · ${esc(fmtDate(l.created_at).slice(11))} · ${esc(prov)}</div>
+        </div>
+        <div class="m-right">
+          <div>${statusPill(l.status)}</div>
+          <div class="m-sub num">${l.ms != null ? num(l.ms) + ' ms' : '-'}</div>
+        </div>
+      </div>`;
+    }).join('') : '<div class="empty-box">No requests logged yet.</div>';
+  }
 }
 
 function renderLogs() {
   const rows = LOGS;
   const tbody = document.getElementById('logs');
-  if (!tbody) return;
-  tbody.innerHTML = rows.length ? rows.map(l => {
-    const prov = l.provider || (l.model && l.model.includes('/') ? l.model.split('/')[0] : 'direct');
-    const bad = Number(l.status) >= 400;
-    return `<tr class="cursor-pointer" onclick="inspect('${esc(l.id)}')">
-      <td class="py-2 pr-2"><button onclick="toggleBookmark(event,'${esc(l.id)}',${!!l.bookmarked})" title="${l.bookmarked ? 'Remove saved mark' : 'Save request'}${esc(l.bookmark_note ? ' · ' + l.bookmark_note : '')}" class="text-xs px-1.5 py-0.5 rounded border" style="border-color:${l.bookmarked ? 'var(--accent)' : 'var(--control)'};color:${l.bookmarked ? 'var(--text)' : 'var(--muted)'}">${l.bookmarked ? 'saved' : 'save'}</button></td>
-      <td class="py-2 pr-3 font-medium">${esc(l.id || '').slice(0, 8)}</td>
-      <td class="py-2 pr-3 whitespace-nowrap num" style="color:var(--muted)">${esc(fmtDate(l.created_at))}</td>
-      <td class="py-2 pr-3 truncate max-w-[140px]">${esc(l.project_name || '-')}</td>
-      <td class="py-2 pr-3 truncate max-w-[220px]" style="color:var(--muted)">${esc(l.method || '')} ${esc(l.path || '')}</td>
-      <td class="py-2 pr-3 truncate max-w-[200px]"><span class="truncate">${esc(l.model || '-')}</span> <span class="text-xs" style="color:var(--muted)">${esc(prov)}</span></td>
-      <td class="py-2 pr-3 num" style="color:${bad ? 'var(--negative)' : 'var(--text)'}">${l.status ?? '-'}</td>
-      <td class="py-2 pr-3 num" style="color:var(--muted)">${l.ms != null ? num(l.ms) : '-'}</td>
-      <td class="py-2 num">${fmtTokCell(l)}</td>
-    </tr>`;
-  }).join('') : '<tr><td class="py-4" style="color:var(--muted)" colspan="9">No matching logs in this range.</td></tr>';
+  const mob = document.getElementById('logsMobile');
+
+  if (tbody) {
+    tbody.innerHTML = rows.length ? rows.map(l => {
+      const prov = l.provider || (l.model && l.model.includes('/') ? l.model.split('/')[0] : 'direct');
+      return `<tr class="row-link" onclick="inspect('${esc(l.id)}')">
+        <td><button type="button" onclick="toggleBookmark(event,'${esc(l.id)}',${!!l.bookmarked})" title="${l.bookmarked ? 'Remove saved mark' : 'Save request'}${esc(l.bookmark_note ? ' · ' + l.bookmark_note : '')}" class="btn-pill btn-sm${l.bookmarked ? ' on' : ''}">${l.bookmarked ? 'Saved' : 'Save'}</button></td>
+        <td class="cell-id">${esc(l.id || '').slice(0, 8)}</td>
+        <td class="num" style="white-space:nowrap;color:var(--muted)">${esc(fmtDate(l.created_at))}</td>
+        <td class="cell-trunc" style="max-width:140px">${esc(l.project_name || '-')}</td>
+        <td class="cell-trunc" style="max-width:200px;color:var(--muted)">${esc(l.method || '')} ${esc(l.path || '')}</td>
+        <td class="cell-trunc" style="max-width:220px"><span>${esc(l.model || '-')}</span> <span class="cell-muted">${esc(prov)}</span></td>
+        <td class="num">${statusPill(l.status)}</td>
+        <td class="num" style="color:var(--muted)">${l.ms != null ? num(l.ms) : '-'}</td>
+        <td class="num">${fmtTokCell(l)}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="9" style="padding:20px 0;text-align:center;color:var(--muted)">No matching logs in this range.</td></tr>';
+  }
+
+  if (mob) {
+    mob.innerHTML = rows.length ? rows.map(l => {
+      const prov = l.provider || (l.model && l.model.includes('/') ? l.model.split('/')[0] : 'direct');
+      return `<div class="m-row" onclick="inspect('${esc(l.id)}')">
+        <div class="m-main">
+          <div class="m-title">${esc(l.model || '-')}</div>
+          <div class="m-sub num">${esc(l.id || '').slice(0, 8)} · ${esc(fmtDate(l.created_at))} · ${esc(l.method || '')} ${esc(l.path || '')} · ${esc(prov)}</div>
+        </div>
+        <div class="m-right">
+          <div>${statusPill(l.status)}</div>
+          <div class="m-sub num">${l.ms != null ? num(l.ms) + ' ms' : '-'}</div>
+        </div>
+      </div>`;
+    }).join('') : '<div class="empty-box">No matching logs in this range.</div>';
+  }
 
   const ps = parseInt(document.getElementById('ps')?.value || '50', 10);
   const pages = Math.max(1, Math.ceil(total / ps));
@@ -92,7 +139,7 @@ function renderLogs() {
 function toggleBookmarkFilter() {
   showBookmarked = !showBookmarked;
   const b = document.getElementById('bmToggle');
-  if (b) b.style.borderColor = showBookmarked ? 'var(--accent)' : 'var(--control)';
+  if (b) b.classList.toggle('on', showBookmarked);
   page = 1;
   reloadLogs();
 }
@@ -104,7 +151,7 @@ function clearFilters() {
   const toEl = document.getElementById('dto'); if (toEl) toEl.value = '';
   showBookmarked = false;
   const b = document.getElementById('bmToggle');
-  if (b) b.style.borderColor = 'var(--control)';
+  if (b) b.classList.remove('on');
   page = 1;
   reloadLogs();
   reloadUsage();
@@ -134,6 +181,7 @@ function nextPage() {
 async function inspect(id) {
   try {
     const r = await fetch('/api/conn/logs/' + encodeURIComponent(id));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();
     const log = j.log || {};
     const bm = log.bookmarked ?? log.meta?.bookmarked ?? false;
@@ -141,7 +189,10 @@ async function inspect(id) {
     curBmId = id;
     curBmState = !!bm;
     const btn = document.getElementById('dlgBmBtn');
-    if (btn) btn.textContent = curBmState ? 'Saved' : 'Save';
+    if (btn) {
+      btn.textContent = curBmState ? 'Saved' : 'Save';
+      btn.classList.toggle('on', curBmState);
+    }
     const ni = document.getElementById('bmNote');
     if (ni) ni.value = note || '';
     const t = JSON.stringify(log, null, 2);
@@ -166,7 +217,7 @@ async function toggleBookmark(ev, id, cur) {
     });
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
-    toast(j.bookmarked ? 'saved' : 'removed');
+    toast(j.bookmarked ? 'Saved' : 'Removed');
     reloadLogs();
   } catch (e) {
     toast(e.message, true);
@@ -186,8 +237,11 @@ async function toggleDlgBookmark() {
     if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
     curBmState = !!j.bookmarked;
     const btn = document.getElementById('dlgBmBtn');
-    if (btn) btn.textContent = curBmState ? 'Saved' : 'Save';
-    toast(curBmState ? 'saved' : 'removed');
+    if (btn) {
+      btn.textContent = curBmState ? 'Saved' : 'Save';
+      btn.classList.toggle('on', curBmState);
+    }
+    toast(curBmState ? 'Saved' : 'Removed');
     reloadLogs();
   } catch (e) {
     toast(e.message, true);
@@ -195,7 +249,7 @@ async function toggleDlgBookmark() {
 }
 
 async function saveBookmarkNote() {
-  if (!curBmId) return toast('open a log first', true);
+  if (!curBmId) return toast('Open a log first', true);
   try {
     const noteVal = document.getElementById('bmNote')?.value || '';
     const r = await fetch('/api/conn/logs/' + encodeURIComponent(curBmId) + '/bookmark', {
@@ -207,8 +261,11 @@ async function saveBookmarkNote() {
     if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
     curBmState = true;
     const btn = document.getElementById('dlgBmBtn');
-    if (btn) btn.textContent = 'Saved';
-    toast('note saved');
+    if (btn) {
+      btn.textContent = 'Saved';
+      btn.classList.add('on');
+    }
+    toast('Note saved');
     reloadLogs();
   } catch (e) {
     toast(e.message, true);
@@ -217,11 +274,11 @@ async function saveBookmarkNote() {
 
 async function copyLog() {
   const t = document.getElementById('db')?.textContent || '';
-  if (!t) return toast('nothing to copy', true);
+  if (!t) return toast('Nothing to copy', true);
   try {
     await navigator.clipboard.writeText(t);
-    toast('copied');
+    toast('Copied JSON');
   } catch (e) {
-    toast('copy failed: ' + e.message, true);
+    toast('Copy failed: ' + e.message, true);
   }
 }

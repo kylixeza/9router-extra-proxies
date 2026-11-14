@@ -350,6 +350,24 @@ async function getUsageAnalytics(opts) {
         GROUP BY 1 ORDER BY tokens_24h DESC LIMIT 10
       `);
 
+      // Hourly 24h pulse: requests, errors, tokens, avg ms
+      const pulseRes = await storage.query(`
+        SELECT date_trunc('hour', created_at) AS bucket,
+               COUNT(*)::int AS requests,
+               COUNT(*) FILTER (WHERE status >= 400)::int AS errors,
+               COALESCE(SUM(COALESCE(prompt_tokens, est_prompt_tokens, 0) + COALESCE(completion_tokens, est_completion_tokens, 0)), 0)::bigint AS tokens,
+               COALESCE(AVG(ms), 0)::int AS avg_ms
+        FROM proxy_logs WHERE created_at >= NOW() - INTERVAL '24 hours'
+        GROUP BY 1 ORDER BY 1 ASC
+      `);
+
+      // Status breakdown across full selected window
+      const stRes = await storage.query(`
+        SELECT COALESCE(status, 0)::int AS status, COUNT(*)::int AS count
+        FROM proxy_logs ${where}
+        GROUP BY 1 ORDER BY count DESC LIMIT 10
+      `, params);
+
       return {
         source: 'pg',
         timeframe,
@@ -358,6 +376,8 @@ async function getUsageAnalytics(opts) {
         models: mRes ? mRes.rows : [],
         projects: prRes ? prRes.rows : [],
         runaway24h: runRes ? runRes.rows : [],
+        hourly24h: pulseRes ? pulseRes.rows : [],
+        statuses: stRes ? stRes.rows : [],
       };
     }
   } catch (_) {}
@@ -370,6 +390,8 @@ async function getUsageAnalytics(opts) {
     models: [],
     projects: [],
     runaway24h: [],
+    hourly24h: [],
+    statuses: [],
   };
 }
 
