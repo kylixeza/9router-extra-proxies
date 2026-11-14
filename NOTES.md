@@ -1,4 +1,4 @@
-# 9router-proxy — Responses compaction (context layer)
+# 9Router Extra Proxies — Responses compaction (context layer)
 
 ## Baseline (T0.1)
 - Fixture: `context_layer/fixtures/responses-sample.json` = `proxy_logs` id `471adbe419`

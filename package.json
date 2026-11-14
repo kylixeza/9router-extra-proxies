@@ -1,8 +1,8 @@
 {
-  "name": "9router-proxy",
+  "name": "9router-extra-proxies",
   "version": "1.0.0",
   "private": true,
-  "description": "9router proxy: orchestration routing + context shaping + connection resilience + storage logging",
+  "description": "9Router Extra Proxies: orchestration routing + context shaping + connection resilience + storage logging",
   "main": "9router-proxy.js",
   "scripts": {
     "test": "node orchestration_layer/test/db-sync.test.js && node orchestration_layer/test/admin-api.test.js && node orchestration_layer/test/pipeline.test.js"
