@@ -67,19 +67,19 @@ function toast(msg, kind = 'info') {
   const box = document.getElementById('toast');
   if (!box) return;
   const el = document.createElement('div');
-  el.className = 'px-3.5 py-2.5 rounded-lg text-xs font-medium shadow-sm border';
+  el.className = 'toast-item';
   if (kind === 'error') {
     el.style.background = 'var(--negative)';
     el.style.borderColor = 'var(--negative)';
-    el.style.color = '#fff';
+    el.style.color = '#ffffff';
   } else if (kind === 'warn') {
     el.style.background = 'var(--pill-warning-bg)';
-    el.style.borderColor = '#f59e0b';
+    el.style.borderColor = '#fde68a';
     el.style.color = 'var(--pill-warning-ink)';
   } else {
     el.style.background = 'var(--text)';
     el.style.borderColor = 'var(--text)';
-    el.style.color = '#fff';
+    el.style.color = '#ffffff';
   }
   el.textContent = String(msg ?? '');
   box.appendChild(el);
@@ -128,23 +128,23 @@ async function apiJson(path, method = 'GET', body = undefined) {
 }
 
 function fmtTimeShort(iso) {
-  if (!iso) return '—';
+  if (!iso) return '-';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return String(iso);
-  return d.toLocaleTimeString('id-ID', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return d.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 function fmtDateTime(iso) {
-  if (!iso) return '—';
+  if (!iso) return '-';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return String(iso);
-  const pad = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  const p = n => (n < 10 ? '0' + n : String(n));
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
 function fmtUptime(sec) {
   const s = Number(sec);
-  if (!Number.isFinite(s) || s < 0) return '—';
+  if (!Number.isFinite(s) || s < 0) return '-';
   if (s < 60) return `${s}s`;
   if (s < 3600) return `${Math.floor(s / 60)}m`;
   const h = Math.floor(s / 3600);
@@ -175,11 +175,6 @@ function fmtInt(n) {
 /* Navigation & Shell Status                                                  */
 /* ========================================================================== */
 
-function toggleSidebar() {
-  const sb = document.getElementById('orchSidebar');
-  if (sb) sb.classList.toggle('open');
-}
-
 function switchTab(tabName) {
   STATE.tab = tabName;
   for (const name of ['models', 'orchestrator', 'monitor', 'tester']) {
@@ -192,8 +187,6 @@ function switchTab(tabName) {
       nav.setAttribute('aria-selected', isTarget ? 'true' : 'false');
     }
   }
-  const sb = document.getElementById('orchSidebar');
-  if (sb) sb.classList.remove('open');
 
   syncMonitorTimer();
   if (tabName === 'monitor') loadMonitor(false);
@@ -202,14 +195,12 @@ function switchTab(tabName) {
 
 function renderShellStatus() {
   const enabled = Boolean(STATE.settings && STATE.settings.enabled);
-  const pillIds = ['hdrEnabledPill', 'sheetStatusPill', 'mobileEnabledPill'];
+  const pillIds = ['hdrEnabledPill', 'mobileEnabledPill'];
   for (const id of pillIds) {
     const el = document.getElementById(id);
     if (!el) continue;
-    el.className = enabled
-      ? 'pill pill-positive text-xs font-medium'
-      : 'pill pill-neutral text-xs font-medium';
-    el.textContent = enabled ? '● enabled' : '○ disabled';
+    el.className = enabled ? 'pill pill-positive' : 'pill pill-neutral';
+    el.textContent = enabled ? 'Enabled' : 'Disabled';
   }
 
   const r9 = STATE.health && STATE.health.router9;
@@ -217,8 +208,8 @@ function renderShellStatus() {
   const sheetR9 = document.getElementById('sheetR9Text');
   if (r9) {
     if (hdrR9) {
-      hdrR9.className = r9.reachable ? 'pill pill-positive text-xs num' : 'pill pill-negative text-xs num';
-      hdrR9.textContent = r9.reachable ? `9router · OK` : `9router · DOWN`;
+      hdrR9.className = r9.reachable ? 'pill pill-positive num' : 'pill pill-negative num';
+      hdrR9.textContent = r9.reachable ? '9router OK' : '9router DOWN';
     }
     if (sheetR9) {
       sheetR9.textContent = r9.reachable
@@ -248,26 +239,54 @@ function renderShellStatus() {
   }
   const sheetMm = document.getElementById('sheetMismatchPill');
   if (sheetMm) {
-    sheetMm.textContent = `⚠ ${mm} mismatch (24h)`;
+    sheetMm.textContent = `${mm} mismatch (24h)`;
     sheetMm.classList.toggle('hidden', mm <= 0);
   }
 
   const stDb = document.getElementById('stDb');
-  if (stDb && STATE.health) {
-    stDb.textContent = STATE.health.dbConnected ? 'pg' : 'mem';
-  }
+  if (stDb && STATE.health) stDb.textContent = STATE.health.dbConnected ? 'pg' : 'mem';
   const stUp = document.getElementById('stUptime');
-  if (stUp && STATE.health) {
-    stUp.textContent = fmtUptime(STATE.health.uptimeSec);
-  }
+  if (stUp && STATE.health) stUp.textContent = fmtUptime(STATE.health.uptimeSec);
   const stHash = document.getElementById('stRosterHash');
-  if (stHash && STATE.roster) {
-    stHash.textContent = STATE.roster.hash || '—';
-  }
+  if (stHash && STATE.roster) stHash.textContent = STATE.roster.hash || '-';
   const stTok = document.getElementById('stRosterTok');
   if (stTok && STATE.roster) {
     const est = STATE.roster.tokensEst ?? Math.ceil((STATE.roster.text || '').length / 4);
-    stTok.textContent = `~${est} tok`;
+    stTok.textContent = `${est} tok`;
+  }
+
+  renderCatalogKpis(total, active, mm);
+}
+
+function renderCatalogKpis(total, active, mismatches) {
+  const ready = STATE.models.filter(m => m.isActive && m.available !== false && m.capTools !== false);
+  const orchCount = ready.filter(m => (m.roles || []).includes('orchestrator')).length;
+  const workerCount = ready.filter(m => (m.roles || []).includes('worker')).length;
+  const fixerCount = ready.filter(m => (m.roles || []).includes('fixer')).length;
+
+  const elActive = document.getElementById('kpiActiveModels');
+  const elTotalMeta = document.getElementById('kpiTotalModelsMeta');
+  const elOrch = document.getElementById('kpiOrchPool');
+  const elWf = document.getElementById('kpiWorkerFixerPool');
+  const elWfMeta = document.getElementById('kpiWorkerFixerMeta');
+  const elMm = document.getElementById('kpiMismatchCount');
+  const elMmMeta = document.getElementById('kpiMismatchMeta');
+
+  if (elActive) {
+    elActive.textContent = String(active);
+    elActive.style.color = active > 0 ? 'var(--accent)' : 'var(--text)';
+  }
+  if (elTotalMeta) elTotalMeta.textContent = `of ${total} synced`;
+  if (elOrch) elOrch.textContent = String(orchCount);
+  if (elWf) elWf.textContent = String(workerCount + fixerCount);
+  if (elWfMeta) elWfMeta.textContent = `${workerCount} workers, ${fixerCount} fixers`;
+  if (elMm) {
+    elMm.textContent = String(mismatches);
+    elMm.style.color = mismatches > 0 ? 'var(--negative)' : 'var(--text)';
+  }
+  if (elMmMeta) {
+    elMmMeta.textContent = mismatches > 0 ? 'check Monitor tab' : 'routed equals applied';
+    elMmMeta.style.color = mismatches > 0 ? 'var(--negative)' : 'var(--muted)';
   }
 }
 
@@ -312,9 +331,8 @@ async function refreshAll() {
     renderModelsTable();
     renderOrchestratorTab();
     if (STATE.tab === 'monitor') await loadMonitor(false);
-    syncOrchestraStage();
   } catch (err) {
-    showErrorBanner('Gagal memuat data dashboard', err.message);
+    showErrorBanner('Failed to load dashboard data', err.message);
     toast(err.message, 'error');
   }
 }
@@ -328,11 +346,11 @@ function renderSyncSummary(customSummary) {
   if (!el) return;
   const s = customSummary || STATE.lastSync;
   if (!s) {
-    el.textContent = `total ${STATE.models.length} model cached`;
+    el.textContent = `${STATE.models.length} models cached`;
     return;
   }
   const timeStr = fmtTimeShort(s.syncedAt);
-  el.textContent = `terakhir ${timeStr} · +${s.added ?? 0} baru · ${s.updated ?? 0} diperbarui · ${s.unavailable ?? 0} hilang · total ${s.total ?? STATE.models.length}`;
+  el.textContent = `Synced ${timeStr} · +${s.added ?? 0} added, ${s.updated ?? 0} updated, ${s.unavailable ?? 0} missing`;
 }
 
 async function syncModels() {
@@ -349,9 +367,9 @@ async function syncModels() {
     renderShellStatus();
     renderModelsTable();
     renderOrchestratorTab();
-    toast(`Sync selesai: +${summary.added} baru, ${summary.updated} diperbarui, ${summary.unavailable} hilang`);
+    toast(`Sync complete: +${summary.added} added, ${summary.updated} updated, ${summary.unavailable} missing`);
   } catch (err) {
-    const title = err.status === 502 ? '9router tidak terjangkau (502)' : 'Sync gagal';
+    const title = err.status === 502 ? '9router unreachable (502)' : 'Sync failed';
     showErrorBanner(title, err.message);
     toast(err.message, 'error');
     loadHealthAndSettings().then(renderShellStatus).catch(() => {});
@@ -441,7 +459,7 @@ function renderBulkBar() {
   const chkAll = document.getElementById('chkSelectAllModels');
   const n = STATE.selectedIds.size;
   if (bar) bar.classList.toggle('hidden', n === 0);
-  if (cnt) cnt.textContent = `${n} dipilih`;
+  if (cnt) cnt.textContent = `${n} selected`;
   if (chkAll) {
     const filteredIds = STATE.filteredModels.map(m => m.id);
     chkAll.checked = filteredIds.length > 0 && filteredIds.every(id => STATE.selectedIds.has(id));
@@ -456,14 +474,14 @@ function renderModelsTable() {
 
   renderBulkBar();
   if (foot) {
-    foot.textContent = `${STATE.filteredModels.length} dari ${STATE.models.length} model ditampilkan`;
+    foot.textContent = `${STATE.filteredModels.length} of ${STATE.models.length} models shown`;
   }
 
   if (!STATE.filteredModels.length) {
     const emptyMsg = STATE.models.length === 0
-      ? 'Belum ada model di katalog. Klik "⟳ Sync dari 9router" untuk memuat daftar model.'
-      : 'Tidak ada model yang cocok dengan filter saat ini.';
-    tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-xs" style="color:var(--muted)">${escHtml(emptyMsg)}</td></tr>`;
+      ? 'No models in catalog yet. Click Sync from 9router to load models.'
+      : 'No models match the active filters.';
+    tbody.innerHTML = `<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--muted)">${escHtml(emptyMsg)}</td></tr>`;
     return;
   }
 
@@ -476,13 +494,13 @@ function renderModelsTable() {
 
     const badges = [];
     if (m.isDefaultWorker && STATE.settings.spread_load === false) {
-      badges.push(`<span class="pill pill-positive text-[10px]">default worker</span>`);
+      badges.push(`<span class="pill pill-positive">default worker</span>`);
     }
     if (m.available === false) {
-      badges.push(`<span class="pill ${m.isActive ? 'pill-negative' : 'pill-warning'} text-[10px]">⚠ tidak tersedia</span>`);
+      badges.push(`<span class="pill ${m.isActive ? 'pill-negative' : 'pill-warning'}">unavailable</span>`);
     }
     if (m.family) {
-      badges.push(`<span class="pill pill-neutral text-[10px] mono">${escHtml(m.family)}</span>`);
+      badges.push(`<span class="pill pill-neutral mono">${escHtml(m.family)}</span>`);
     }
 
     const rolePills = ALL_ROLES.map(r => {
@@ -500,43 +518,43 @@ function renderModelsTable() {
     ].join('');
 
     const notesSub = m.notes
-      ? `<div class="text-[11px] truncate max-w-md mt-0.5" style="color:var(--muted)" title="${escHtml(m.notes)}">${escHtml(m.notes)}</div>`
+      ? `<div class="truncate" style="font-size:12px;max-width:420px;margin-top:2px;color:var(--muted)" title="${escHtml(m.notes)}">${escHtml(m.notes)}</div>`
       : '';
 
     return `<tr class="${rowCls}" data-model-id="${escHtml(m.id)}">
-      <td class="text-center">
-        <input type="checkbox" data-action="select-row" ${checked} aria-label="Pilih ${escHtml(m.id)}">
+      <td style="text-align:center">
+        <input type="checkbox" data-action="select-row" ${checked} aria-label="Select ${escHtml(m.id)}">
       </td>
       <td>
-        <label class="switch" title="Aktifkan/nonaktifkan model">
+        <label class="switch" title="Toggle model active">
           <input type="checkbox" data-action="toggle-active" ${activeChecked}>
           <span class="switch-slider"></span>
         </label>
       </td>
       <td>
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <button type="button" data-action="open-detail" class="mono text-xs font-medium text-left hover:underline break-all" style="color:var(--text)">${escHtml(m.id)}</button>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <button type="button" data-action="open-detail" class="mono break-all" style="background:none;border:0;padding:0;font-size:13px;font-weight:500;text-align:left;color:var(--text)">${escHtml(m.id)}</button>
           ${badges.join('')}
         </div>
         ${notesSub}
       </td>
       <td>
-        <div class="flex flex-wrap gap-1">${rolePills}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">${rolePills}</div>
       </td>
       <td>
-        <select data-action="change-tier" class="h-7 px-1.5 rounded border hair bg-white text-xs w-full" aria-label="Tier ${escHtml(m.id)}">
-          <option value="" ${tierVal === '' ? 'selected' : ''}>—</option>
+        <select data-action="change-tier" class="input" style="height:28px;padding:0 6px" aria-label="Tier ${escHtml(m.id)}">
+          <option value="" ${tierVal === '' ? 'selected' : ''}>-</option>
           <option value="fast" ${tierVal === 'fast' ? 'selected' : ''}>fast</option>
           <option value="balanced" ${tierVal === 'balanced' ? 'selected' : ''}>balanced</option>
           <option value="strong" ${tierVal === 'strong' ? 'selected' : ''}>strong</option>
         </select>
       </td>
-      <td class="num text-right mono text-xs">${escHtml(fmtCtx(m))}</td>
+      <td class="num mono" style="font-size:13px">${escHtml(fmtCtx(m))}</td>
       <td>
-        <div class="flex items-center gap-1">${capsHtml}</div>
+        <div style="display:flex;align-items:center;gap:4px">${capsHtml}</div>
       </td>
-      <td class="text-right">
-        <button type="button" data-action="open-detail" class="h-7 px-2 rounded bg-white border hair text-xs hover:bg-gray-50">Detail</button>
+      <td style="text-align:right">
+        <button type="button" data-action="open-detail" class="btn btn-sm">Detail</button>
       </td>
     </tr>`;
   }).join('');
@@ -552,8 +570,8 @@ function checkClientSideActivationGuard(model, nextActive, nextRoles) {
   const hasToolRole = nextRoles.some(r => TOOL_ROLES.has(r));
   if (nextActive && hasToolRole && model.capTools === false) {
     const blockedRoles = nextRoles.filter(r => TOOL_ROLES.has(r)).join('/');
-    const reason = `Ditolak: Model "${model.id}" memiliki cap_tools=false sehingga tidak dapat diaktifkan untuk role ${blockedRoles}.`;
-    showErrorBanner('Validasi kapabilitas gagal (cap_tools=false)', reason);
+    const reason = `Rejected: Model "${model.id}" has cap_tools=false and cannot be activated for ${blockedRoles} role(s).`;
+    showErrorBanner('Capability validation failed (cap_tools=false)', reason);
     toast(reason, 'error');
     return false;
   }
@@ -574,7 +592,7 @@ async function patchSingleModel(modelId, patch) {
     if (idx >= 0) STATE.models[idx] = res.model;
   }
   if (Array.isArray(res.warnings) && res.warnings.length > 0) {
-    toast(`Peringatan (${modelId}): ${res.warnings.join('; ')}`, 'warn');
+    toast(`Warning (${modelId}): ${res.warnings.join('; ')}`, 'warn');
   }
   await loadHealthAndSettings({ preserveDirty: true });
   applyModelFilters();
@@ -613,15 +631,15 @@ async function runBulk(op) {
     const noticeText = document.getElementById('bulkResultText');
     if (skipped.length > 0 && notice && noticeText) {
       const reasons = skipped.map(s => `${s.id}: ${s.reason}`).join(' · ');
-      noticeText.textContent = `Diperbarui: ${res.updated} model · Dilewati (${skipped.length}): ${reasons}`;
+      noticeText.textContent = `Updated: ${res.updated} models · Skipped (${skipped.length}): ${reasons}`;
       notice.classList.remove('hidden');
-      toast(`Bulk selesai: ${res.updated} diperbarui, ${skipped.length} dilewati`, 'warn');
+      toast(`Bulk complete: ${res.updated} updated, ${skipped.length} skipped`, 'warn');
     } else {
       if (notice) notice.classList.add('hidden');
-      toast(`Bulk selesai: ${res.updated} model diperbarui`);
+      toast(`Bulk complete: ${res.updated} models updated`);
     }
   } catch (err) {
-    showErrorBanner('Bulk update gagal', err.message);
+    showErrorBanner('Bulk update failed', err.message);
     toast(err.message, 'error');
   }
 }
@@ -679,9 +697,9 @@ async function saveModelDetail() {
       notes: notesRaw || null,
     });
     closeModelDetail();
-    toast(`Detail ${id} disimpan`);
+    toast(`Saved details for ${id}`);
   } catch (err) {
-    showErrorBanner(`Gagal menyimpan ${id}`, err.message);
+    showErrorBanner(`Failed to save ${id}`, err.message);
     toast(err.message, 'error');
   }
 }
@@ -694,7 +712,7 @@ function markSettingsDirty() {
   STATE.settingsDirty = true;
   const el = document.getElementById('settingsDirtyState');
   if (el) {
-    el.textContent = '● Belum disimpan';
+    el.textContent = '● Unsaved changes';
     el.style.color = 'var(--warning)';
   }
 }
@@ -719,24 +737,22 @@ function renderOrchestratorWarnings() {
     items.push({
       severe: true,
       code: 'mismatch_24h',
-      message: `Terdeteksi ${STATE.mismatches24h} model mismatch dalam 24 jam terakhir (routed_model !== applied_model). Periksa tab Monitor!`,
+      message: `Detected ${STATE.mismatches24h} model mismatch(es) in the last 24h (routed_model !== applied_model). Check Monitor tab!`,
     });
   }
   for (const w of (STATE.warnings || [])) {
     items.push({ severe: false, code: w.code || 'warn', message: w.message || String(w) });
   }
   if (!items.length) {
-    box.innerHTML = `<div class="px-3.5 py-2 rounded-lg border text-xs flex items-center gap-2" style="background:var(--pill-positive-bg);color:var(--pill-positive-ink);border-color:#a7f3d0">
-      <span>✓</span><span>Semua pemeriksaan konfigurasi orchestrator sehat.</span>
+    box.innerHTML = `<div class="notice notice-positive">
+      <span>All orchestrator configuration checks passed.</span>
     </div>`;
     return;
   }
   box.innerHTML = items.map(it => {
-    const style = it.severe
-      ? 'background:var(--pill-negative-bg);color:var(--pill-negative-ink);border-color:#fecaca'
-      : 'background:var(--pill-warning-bg);color:var(--pill-warning-ink);border-color:#fde68a';
-    return `<div class="px-3.5 py-2 rounded-lg border text-xs flex items-start justify-between gap-2" style="${style}">
-      <div><span class="font-semibold mono">[${escHtml(it.code)}]</span> ${escHtml(it.message)}</div>
+    const cls = it.severe ? 'notice notice-negative' : 'notice notice-warning';
+    return `<div class="${cls}">
+      <div><span class="mono" style="font-weight:600">[${escHtml(it.code)}]</span> ${escHtml(it.message)}</div>
     </div>`;
   }).join('');
 }
@@ -758,27 +774,25 @@ function renderEqualRolePool(role, ulId, badgeId) {
   if (!ul) return;
 
   if (!peers.length) {
-    const minHint = role === 'worker' ? 'minimal 2 model worker' : `minimal 1 model ${role}`;
-    ul.innerHTML = `<li class="text-xs py-3 px-3 rounded border border-dashed hair text-center" style="color:var(--muted)">Belum ada ${escHtml(role)} aktif — aktifkan ${escHtml(minHint)} di tab Models.</li>`;
+    const minHint = role === 'worker' ? 'at least 2 worker models' : `at least 1 ${role} model`;
+    ul.innerHTML = `<li style="font-size:12px;padding:12px;border-radius:6px;border:1px dashed var(--control);text-align:center;color:var(--muted)">No active ${escHtml(role)} yet. Enable ${escHtml(minHint)} in Models.</li>`;
     return;
   }
 
   ul.innerHTML = peers.map(m => {
     const badges = [
-      `<span class="pill pill-positive text-[10px]">AVAILABLE</span>`,
-      m.family ? `<span class="pill pill-neutral text-[10px] mono">${escHtml(m.family)}</span>` : '',
-      m.tier ? `<span class="pill pill-neutral text-[10px]">${escHtml(m.tier)}</span>` : '',
-      `<span class="pill pill-neutral text-[10px] mono">ctx ${escHtml(fmtCtx(m))}</span>`,
+      `<span class="pill pill-positive">Available</span>`,
+      m.family ? `<span class="pill pill-neutral mono">${escHtml(m.family)}</span>` : '',
+      m.tier ? `<span class="pill pill-neutral">${escHtml(m.tier)}</span>` : '',
+      `<span class="pill pill-neutral mono">ctx ${escHtml(fmtCtx(m))}</span>`,
     ].filter(Boolean).join('');
     const noteLine = m.notes
-      ? `<div class="text-[11px] mt-1 truncate" style="color:var(--muted)" title="${escHtml(m.notes)}">${escHtml(m.notes)}</div>`
+      ? `<div class="truncate" style="font-size:12px;margin-top:4px;color:var(--muted)" title="${escHtml(m.notes)}">${escHtml(m.notes)}</div>`
       : '';
-    return `<li class="chain-item" style="cursor:default">
-      <div class="min-w-0 flex-1">
-        <div class="mono text-xs font-medium break-all">${escHtml(m.id)}</div>
-        <div class="flex flex-wrap gap-1 mt-1">${badges}</div>
-        ${noteLine}
-      </div>
+    return `<li class="pool-item">
+      <div class="mono break-all" style="font-size:12px;font-weight:500">${escHtml(m.id)}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${badges}</div>
+      ${noteLine}
     </li>`;
   }).join('');
 }
@@ -794,10 +808,10 @@ function renderDefaultWorkerSelector() {
   if (!sel) return;
   const workers = STATE.models.filter(m => m.isActive && (m.roles || []).includes('worker'));
   const currentDefault = STATE.models.find(m => m.isDefaultWorker);
-  const opts = [`<option value="">— tanpa default worker —</option>`];
+  const opts = [`<option value="">— no default worker —</option>`];
   for (const w of workers) {
     const selected = currentDefault && currentDefault.id === w.id ? 'selected' : '';
-    const suffix = !w.available ? ' [tidak tersedia]' : '';
+    const suffix = !w.available ? ' [unavailable]' : '';
     opts.push(`<option value="${escHtml(w.id)}" ${selected}>${escHtml(w.id + suffix)}</option>`);
   }
   if (currentDefault && !workers.some(w => w.id === currentDefault.id)) {
@@ -847,7 +861,7 @@ function renderOrchestratorTab() {
 
     const dirtyEl = document.getElementById('settingsDirtyState');
     if (dirtyEl) {
-      dirtyEl.textContent = 'Tersimpan';
+      dirtyEl.textContent = 'Saved';
       dirtyEl.style.color = 'var(--muted)';
     }
   }
@@ -894,9 +908,9 @@ async function saveSettings() {
     STATE.settingsDirty = false;
     renderShellStatus();
     renderOrchestratorTab();
-    toast('Settings berhasil disimpan');
+    toast('Settings saved');
   } catch (err) {
-    showErrorBanner('Gagal menyimpan settings', err.message);
+    showErrorBanner('Failed to save settings', err.message);
     toast(err.message, 'error');
   } finally {
     if (btn) btn.disabled = false;
@@ -909,7 +923,7 @@ async function changeDefaultWorker(modelId) {
     if (!cur) return;
     try {
       await patchSingleModel(cur.id, { isDefaultWorker: false });
-      toast('Default worker dihapus');
+      toast('Default worker cleared');
     } catch (err) {
       toast(err.message, 'error');
     }
@@ -917,9 +931,9 @@ async function changeDefaultWorker(modelId) {
   }
   try {
     await patchSingleModel(modelId, { isDefaultWorker: true });
-    toast(`Default worker diset ke ${modelId}`);
+    toast(`Default worker set to ${modelId}`);
   } catch (err) {
-    showErrorBanner('Gagal mengubah default worker', err.message);
+    showErrorBanner('Failed to update default worker', err.message);
     toast(err.message, 'error');
   }
 }
@@ -936,7 +950,7 @@ async function refreshRosterPreview() {
     };
     renderRosterPreview();
     renderShellStatus();
-    toast('Roster preview diperbarui');
+    toast('Roster preview refreshed');
   } catch (err) {
     toast(err.message, 'error');
   }
@@ -946,29 +960,15 @@ async function copyRosterText() {
   const text = (STATE.roster && STATE.roster.text) || '';
   try {
     await navigator.clipboard.writeText(text);
-    toast('Teks <orch-roster> disalin ke clipboard');
+    toast('<orch-roster> copied to clipboard');
   } catch (_) {
-    toast('Gagal menyalin ke clipboard', 'error');
+    toast('Failed to copy to clipboard', 'error');
   }
 }
 
 /* ========================================================================== */
 /* Tab 3: Monitor                                                             */
 /* ========================================================================== */
-
-function syncOrchestraStage() {
-  if (typeof window !== 'undefined' && window.OrchSymphony) {
-    window.OrchSymphony.init();
-    window.OrchSymphony.updateData({
-      models: STATE.models,
-      settings: STATE.settings,
-      inflight: STATE.inflight,
-      recentCalls: STATE.recentCalls,
-      planCalls: STATE.planCalls,
-      selectedPlanId: STATE.selectedPlanId,
-    });
-  }
-}
 
 function syncMonitorTimer() {
   if (STATE.monitorTimer) {
@@ -1009,8 +1009,7 @@ async function loadMonitor(manual = false) {
     if (STATE.selectedPlanId) {
       await loadPlanCalls(STATE.selectedPlanId);
     }
-    syncOrchestraStage();
-    if (manual) toast('Monitor diperbarui');
+    if (manual) toast('Monitor updated');
   } catch (err) {
     if (manual) toast(err.message, 'error');
   }
@@ -1023,7 +1022,7 @@ function renderPlansTable() {
   if (countLbl) countLbl.textContent = `${STATE.plans.length} plans`;
 
   if (!STATE.plans.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-xs" style="color:var(--muted)">Belum ada panggilan orchestration tercatat</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-xs" style="color:var(--muted)">No orchestration calls recorded yet</td></tr>`;
     return;
   }
 
@@ -1036,14 +1035,14 @@ function renderPlansTable() {
     const mm = Number(p.mismatch_count || 0);
 
     return `<tr class="plan-row ${isSel ? 'selected' : ''}" data-plan-id="${escHtml(pid)}">
-      <td class="mono text-xs font-medium">${escHtml(displayPid)}</td>
-      <td class="num text-xs" style="color:var(--muted)">${escHtml(fmtDateTime(p.last_at))}</td>
-      <td class="num text-right">${escHtml(fmtInt(p.task_count))}</td>
-      <td class="num text-right font-medium">${escHtml(fmtInt(p.call_count))}</td>
-      <td class="num text-right">${escHtml(fmtInt(p.total_tokens))}</td>
-      <td class="num text-right">${fb > 0 ? `<span class="pill pill-warning num">${fb}</span>` : '0'}</td>
-      <td class="num text-right">${er > 0 ? `<span class="pill pill-negative num">${er}</span>` : '0'}</td>
-      <td class="num text-right">${mm > 0 ? `<span class="pill pill-negative num font-semibold">${mm}</span>` : '0'}</td>
+      <td class="mono" style="font-size:12px;font-weight:500">${escHtml(displayPid)}</td>
+      <td class="num" style="font-size:12px;color:var(--muted)">${escHtml(fmtDateTime(p.last_at))}</td>
+      <td class="num">${escHtml(fmtInt(p.task_count))}</td>
+      <td class="num" style="font-weight:500">${escHtml(fmtInt(p.call_count))}</td>
+      <td class="num">${escHtml(fmtInt(p.total_tokens))}</td>
+      <td class="num">${fb > 0 ? `<span class="pill pill-warning num">${fb}</span>` : '0'}</td>
+      <td class="num">${er > 0 ? `<span class="pill pill-negative num">${er}</span>` : '0'}</td>
+      <td class="num">${mm > 0 ? `<span class="pill pill-negative num" style="font-weight:600">${mm}</span>` : '0'}</td>
     </tr>`;
   }).join('');
 }
@@ -1052,7 +1051,6 @@ async function selectPlanRow(planId) {
   STATE.selectedPlanId = planId;
   renderPlansTable();
   await loadPlanCalls(planId);
-  syncOrchestraStage();
 }
 
 async function loadPlanCalls(planId) {
@@ -1069,7 +1067,7 @@ function renderCallsTable() {
   const tbody = document.getElementById('callsTbody');
   if (!tbody) return;
   if (!STATE.planCalls.length) {
-    tbody.innerHTML = `<tr><td colspan="11" class="py-6 text-center text-xs" style="color:var(--muted)">Tidak ada call untuk plan ini</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" class="py-6 text-center text-xs" style="color:var(--muted)">No calls for this plan</td></tr>`;
     return;
   }
 
@@ -1101,24 +1099,24 @@ function renderCallsTable() {
     const outTok = c.output_tokens != null ? fmtInt(c.output_tokens) : '—';
 
     return `<tr class="${rowCls}">
-      <td class="num text-xs" style="color:var(--muted)">${escHtml(fmtTimeShort(c.ts))}</td>
-      <td><span class="pill pill-neutral mono text-[10px]">${escHtml(c.kind || '—')}</span></td>
-      <td class="mono text-xs">${escHtml(taskAtt)}</td>
-      <td class="mono text-xs">${escHtml(c.role || '—')}</td>
-      <td class="mono text-xs">
+      <td class="num" style="font-size:12px;color:var(--muted)">${escHtml(fmtTimeShort(c.ts))}</td>
+      <td><span class="pill pill-neutral mono">${escHtml(c.kind || '-')}</span></td>
+      <td class="mono" style="font-size:12px">${escHtml(taskAtt)}</td>
+      <td class="mono" style="font-size:12px">${escHtml(c.role || '-')}</td>
+      <td class="mono" style="font-size:12px">
         <span style="color:var(--muted)">${escHtml(reqM)}</span>
-        <span> → </span>
-        <span class="font-semibold">${escHtml(rtdM)}</span>
-        <span> → </span>
-        <span class="${isMismatch ? 'font-bold' : ''}" style="${isMismatch ? 'color:var(--negative)' : ''}">${escHtml(appM)}</span>
-        ${isMismatch ? ` <span class="pill pill-negative text-[10px]">MISMATCH</span>` : ''}
+        <span style="color:var(--muted)"> / </span>
+        <span style="font-weight:600">${escHtml(rtdM)}</span>
+        <span style="color:var(--muted)"> / </span>
+        <span style="${isMismatch ? 'font-weight:700;color:var(--negative)' : ''}">${escHtml(appM)}</span>
+        ${isMismatch ? ` <span class="pill pill-negative">MISMATCH</span>` : ''}
       </td>
-      <td class="mono text-xs">${escHtml(c.rewritten_by || '—')}</td>
-      <td>${isFallback ? `<span class="pill pill-warning mono text-[10px]">${escHtml(c.fallback_reason)}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
-      <td class="num text-right">${statusBadge}</td>
-      <td class="num text-right text-xs">${escHtml(ttfbStr)} / ${escHtml(latStr)}</td>
-      <td class="num text-right text-xs">${escHtml(inTok)} / ${escHtml(outTok)}</td>
-      <td class="mono text-xs break-all" style="color:var(--negative)">${escHtml(c.error || '')}</td>
+      <td class="mono" style="font-size:12px">${escHtml(c.rewritten_by || '-')}</td>
+      <td>${isFallback ? `<span class="pill pill-warning mono">${escHtml(c.fallback_reason)}</span>` : '<span style="color:var(--muted)">-</span>'}</td>
+      <td class="num">${statusBadge}</td>
+      <td class="num" style="font-size:12px">${escHtml(ttfbStr)} / ${escHtml(latStr)}</td>
+      <td class="num" style="font-size:12px">${escHtml(inTok)} / ${escHtml(outTok)}</td>
+      <td class="mono break-all" style="font-size:12px;color:var(--negative)">${escHtml(c.error || '')}</td>
     </tr>`;
   }).join('');
 }
@@ -1187,7 +1185,7 @@ async function runDryRun() {
   const ta = document.getElementById('dryRunInput');
   const raw = ta ? ta.value : '';
   if (!raw.trim()) {
-    toast('Masukkan teks marker, prompt, atau JSON terlebih dahulu', 'warn');
+    toast('Enter marker text, prompt, or JSON first', 'warn');
     return;
   }
   hideErrorBanner();
@@ -1196,7 +1194,7 @@ async function runDryRun() {
     const out = await apiJson('/orch/api/route/dry-run', 'POST', payload);
     renderDryRunResult(out);
   } catch (err) {
-    showErrorBanner('Dry-run gagal', err.message);
+    showErrorBanner('Dry-run failed', err.message);
     toast(err.message, 'error');
   }
 }
@@ -1210,15 +1208,15 @@ function renderDryRunResult(out) {
   const kindBadge = document.getElementById('dryRunKindBadge');
   if (kindBadge) {
     const cls = kind === 'ORCH'
-      ? 'pill pill-positive mono text-xs font-semibold'
-      : (kind === 'SUBAGENT' ? 'pill pill-warning mono text-xs font-semibold' : 'pill pill-neutral mono text-xs font-semibold');
+      ? 'pill pill-positive mono'
+      : (kind === 'SUBAGENT' ? 'pill pill-warning mono' : 'pill pill-neutral mono');
     kindBadge.className = cls;
     kindBadge.textContent = kind;
   }
 
-  const reqModel = out.requestedModel ?? out.originalModel ?? '—';
+  const reqModel = out.requestedModel ?? out.originalModel ?? '-';
   const routedModel = out.routedModel ?? out.finalModel ?? '(unchanged / passthrough)';
-  document.getElementById('drModelFlow').textContent = `${reqModel} → ${routedModel}`;
+  document.getElementById('drModelFlow').textContent = `${reqModel} -> ${routedModel}`;
 
   const fbReason = out.fallbackReason || (out.failOpen ? 'fail-open' : 'none');
   const fbEl = document.getElementById('drFallbackInfo');
@@ -1240,16 +1238,16 @@ function renderDryRunResult(out) {
   const warnings = Array.isArray(out.warnings) ? out.warnings : [];
   const warnEl = document.getElementById('drWarningsList');
   warnEl.innerHTML = warnings.length
-    ? warnings.map(w => `<div class="px-2.5 py-1.5 rounded border text-xs" style="background:var(--pill-warning-bg);color:var(--pill-warning-ink);border-color:#fde68a">${escHtml(typeof w === 'string' ? w : JSON.stringify(w))}</div>`).join('')
-    : `<div style="color:var(--muted)">Tidak ada warning</div>`;
+    ? warnings.map(w => `<div class="notice notice-warning">${escHtml(typeof w === 'string' ? w : JSON.stringify(w))}</div>`).join('')
+    : `<div style="color:var(--muted)">No warnings</div>`;
 
   const changes = Array.isArray(out.adapterChanges)
     ? out.adapterChanges
     : (Array.isArray(out.changes) ? out.changes : []);
   const adEl = document.getElementById('drAdapterList');
   adEl.innerHTML = changes.length
-    ? changes.map(c => `<div class="mono text-[11px] px-2 py-1 rounded bg-white border hair">${escHtml(typeof c === 'string' ? c : JSON.stringify(c))}</div>`).join('')
-    : `<div style="color:var(--muted)">Tidak ada perubahan parameter body</div>`;
+    ? changes.map(c => `<div class="code-well mono">${escHtml(typeof c === 'string' ? c : JSON.stringify(c))}</div>`).join('')
+    : `<div style="color:var(--muted)">No body parameter changes</div>`;
 
   const hdrs = out.headers || out.outHeaders || {};
   document.getElementById('drHeadersPre').textContent = Object.keys(hdrs).length
@@ -1295,7 +1293,7 @@ function bindDelegatedEvents() {
         try {
           await patchSingleModel(modelId, { roles: nextRoles });
         } catch (err) {
-          showErrorBanner(`Gagal mengubah role ${modelId}`, err.message);
+          showErrorBanner(`Failed to update role for ${modelId}`, err.message);
           toast(err.message, 'error');
         }
       }
@@ -1325,7 +1323,7 @@ function bindDelegatedEvents() {
           await patchSingleModel(modelId, { isActive: nextActive });
         } catch (err) {
           el.checked = m.isActive;
-          showErrorBanner(`Gagal mengubah status aktif ${modelId}`, err.message);
+          showErrorBanner(`Failed to update active status for ${modelId}`, err.message);
           toast(err.message, 'error');
         }
       } else if (action === 'change-tier') {
@@ -1334,7 +1332,7 @@ function bindDelegatedEvents() {
           await patchSingleModel(modelId, { tier: nextTier });
         } catch (err) {
           el.value = m.tier || '';
-          showErrorBanner(`Gagal mengubah tier ${modelId}`, err.message);
+          showErrorBanner(`Failed to update tier for ${modelId}`, err.message);
           toast(err.message, 'error');
         }
       }
