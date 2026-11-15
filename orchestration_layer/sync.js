@@ -21,7 +21,7 @@ function fetch9RouterModels(opts = {}) {
         const raw = Buffer.concat(chunks).toString('utf8');
         if (res.statusCode < 200 || res.statusCode >= 300) {
           return reject(Object.assign(
-            new Error(`9router tidak terjangkau (HTTP ${res.statusCode}): ${raw.slice(0, 200)}`),
+            new Error(`9router unreachable (HTTP ${res.statusCode}): ${raw.slice(0, 200)}`),
             { status: 502 }
           ));
         }
@@ -31,25 +31,25 @@ function fetch9RouterModels(opts = {}) {
             ? parsed
             : (parsed && Array.isArray(parsed.data) ? parsed.data : null);
           if (!list) {
-            return reject(Object.assign(new Error('Format respons /v1/models 9router tidak dikenali'), { status: 502 }));
+            return reject(Object.assign(new Error('Unrecognized 9router /v1/models response format'), { status: 502 }));
           }
           resolve(list);
         } catch (err) {
-          reject(Object.assign(new Error(`Respons /v1/models bukan JSON valid: ${err.message}`), { status: 502 }));
+          reject(Object.assign(new Error(`Invalid JSON from /v1/models: ${err.message}`), { status: 502 }));
         }
       });
-      res.on('error', err => reject(Object.assign(new Error(`9router tidak terjangkau: ${err.message}`), { status: 502 })));
+      res.on('error', err => reject(Object.assign(new Error(`9router unreachable: ${err.message}`), { status: 502 })));
     });
 
     const timer = setTimeout(() => {
-      req.destroy(Object.assign(new Error(`9router tidak terjangkau (timeout ${timeoutMs}ms)`), { status: 502 }));
+      req.destroy(Object.assign(new Error(`9router unreachable (timeout ${timeoutMs}ms)`), { status: 502 }));
     }, timeoutMs);
 
     req.once('response', () => clearTimeout(timer));
     req.once('close', () => clearTimeout(timer));
     req.on('error', err => {
       clearTimeout(timer);
-      reject(Object.assign(new Error(err.status === 502 ? err.message : `9router tidak terjangkau: ${err.message}`), { status: 502 }));
+      reject(Object.assign(new Error(err.status === 502 ? err.message : `9router unreachable: ${err.message}`), { status: 502 }));
     });
     req.end();
   });

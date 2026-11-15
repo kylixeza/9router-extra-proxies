@@ -115,7 +115,7 @@ function startMock9Router(handler) {
   await deadStore.init();
   await assert.rejects(
     () => syncModelsFrom9Router(deadStore, { router9Url: 'http://127.0.0.1:19999', timeoutMs: 1000 }),
-    err => err.status === 502 && /9router tidak terjangkau/i.test(err.message)
+    err => err.status === 502 && /9router unreachable/i.test(err.message)
   );
 
   // 5. Verify PostgreSQL schema migration & round-trip against live PG if enabled

@@ -615,25 +615,25 @@ function createStore(opts = {}) {
     const all = listCachedModels();
     const activeOrchestrators = all.filter(m => m.isActive && m.available && m.roles.includes('orchestrator') && m.capTools !== false);
     if (!activeOrchestrators.length) {
-      warnings.push({ code: 'no_orchestrators', message: 'Belum ada model aktif berole orchestrator di pool — /orch-plan akan fail-open ke model asli.' });
+      warnings.push({ code: 'no_orchestrators', message: 'No active orchestrator model in pool — /orch-plan will fail-open to the original model.' });
     }
     const activeWorkers = all.filter(m => m.isActive && m.available && m.roles.includes('worker') && m.capTools !== false);
     if (!activeWorkers.length) {
-      warnings.push({ code: 'no_workers', message: 'Belum ada model aktif berole worker di pool.' });
+      warnings.push({ code: 'no_workers', message: 'No active worker model in pool.' });
     } else if (s.spread_load !== false && activeWorkers.length < 2) {
-      warnings.push({ code: 'single_worker_pool', message: 'Hanya 1 worker aktif di pool — aktifkan >=2 worker agar beban task bisa disebar antar model.' });
+      warnings.push({ code: 'single_worker_pool', message: 'Only 1 active worker in pool — activate >=2 workers to spread task load across models.' });
     }
     const activeUnavailable = all.filter(m => m.isActive && !m.available);
     if (activeUnavailable.length) {
-      warnings.push({ code: 'active_unavailable', message: `Model aktif tidak lagi tersedia di 9router: ${activeUnavailable.map(m => m.id).join(', ')}` });
+      warnings.push({ code: 'active_unavailable', message: `Active models no longer available in 9router: ${activeUnavailable.map(m => m.id).join(', ')}` });
     }
     const fixers = all.filter(m => m.isActive && m.available && m.roles.includes('fixer') && m.capTools !== false);
     if (!fixers.length) {
-      warnings.push({ code: 'no_fixer', message: 'Belum ada model aktif berole fixer.' });
+      warnings.push({ code: 'no_fixer', message: 'No active fixer model in pool.' });
     }
     const nullCaps = all.filter(m => m.isActive && (m.capTools === null || m.capVision === null || m.capReasoning === null));
     if (nullCaps.length) {
-      warnings.push({ code: 'null_capabilities', message: `Capability NULL (?) pada model aktif: ${nullCaps.map(m => m.id).join(', ')}` });
+      warnings.push({ code: 'null_capabilities', message: `NULL (?) capability on active models: ${nullCaps.map(m => m.id).join(', ')}` });
     }
     return warnings;
   }
