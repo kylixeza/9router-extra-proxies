@@ -49,10 +49,12 @@ function accBadge(lv) {
 
 function mkBtn(t, fn, title) {
   const b = document.createElement('button');
+  b.type = 'button';
   b.textContent = t;
   b.title = title || t;
-  b.className = 'h-6 min-w-6 px-1 rounded-md border hair bg-white text-[11px] font-mono';
-  b.style.color = 'var(--muted)';
+  b.setAttribute('aria-label', title || t);
+  b.className = 'btn btn-sm';
+  b.style.cssText = 'height:26px;min-width:26px;padding:0 6px;font-size:12px;color:var(--muted)';
   b.onclick = (e) => { e.preventDefault(); fn(); };
   return b;
 }
@@ -60,16 +62,14 @@ function mkBtn(t, fn, title) {
 function textNodeEl(text) {
   const w = document.createElement('div');
   w.dataset.ntype = 'x';
-  w.className = 'rounded-lg border hair p-2';
-  w.style.background = 'var(--raised)';
+  w.style.cssText = 'border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--raised)';
   const bar = document.createElement('div');
-  bar.className = 'flex items-center gap-1 mb-1';
+  bar.style.cssText = 'display:flex;align-items:center;gap:4px;margin-bottom:6px';
   const tag = document.createElement('span');
-  tag.className = 'text-[10px] font-mono';
-  tag.style.color = 'var(--muted)';
-  tag.textContent = 'text';
+  tag.style.cssText = 'font-size:12px;color:var(--muted);font-weight:500';
+  tag.textContent = 'Paragraph';
   bar.appendChild(tag);
-  bar.appendChild(Object.assign(document.createElement('span'), { className: 'flex-1' }));
+  bar.appendChild(Object.assign(document.createElement('span'), { style: 'flex:1' }));
   bar.appendChild(mkBtn('↑', () => { w.previousElementSibling ? w.parentNode.insertBefore(w, w.previousElementSibling) : 0; }, 'move up'));
   bar.appendChild(mkBtn('↓', () => { w.nextElementSibling ? w.parentNode.insertBefore(w.nextElementSibling, w) : 0; }, 'move down'));
   bar.appendChild(mkBtn('×', () => w.remove(), 'delete'));
@@ -78,7 +78,8 @@ function textNodeEl(text) {
   ta.dataset.body = '1';
   ta.value = text || '';
   ta.rows = 2;
-  ta.className = 'w-full px-2 py-1.5 rounded-md bg-white border hair text-xs font-mono resize-y';
+  ta.className = 'textarea';
+  ta.style.cssText = 'background:var(--surface);font-size:13px;resize:vertical';
   ta.oninput = () => autoGrow(ta);
   w.appendChild(ta);
   requestAnimationFrame(() => autoGrow(ta));
@@ -86,7 +87,7 @@ function textNodeEl(text) {
 }
 
 function titleFont(lv) {
-  return [(lv <= 1 ? '16px' : lv === 2 ? '14px' : lv === 3 ? '13px' : '12px'), lv <= 2 ? '700' : '600'];
+  return [(lv <= 1 ? '15px' : lv === 2 ? '14px' : '13px'), lv <= 2 ? '600' : '500'];
 }
 
 function headerNodeEl(level, title) {
@@ -94,10 +95,10 @@ function headerNodeEl(level, title) {
   const w = document.createElement('div');
   w.dataset.ntype = 'h';
   w.dataset.level = level;
-  w.className = 'rounded-lg border hair bg-white overflow-hidden';
+  w.className = 'card';
+  w.style.overflow = 'hidden';
   const hd = document.createElement('div');
-  hd.className = 'flex items-center gap-1.5 px-2.5 py-2 border-b hair';
-  hd.style.background = 'var(--raised)';
+  hd.style.cssText = 'display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--rule);background:var(--raised)';
   const tg = mkBtn('▾', () => {
     const b = w.querySelector('[data-kids]');
     const hid = b.classList.toggle('hidden');
@@ -106,14 +107,15 @@ function headerNodeEl(level, title) {
   hd.appendChild(tg);
   const badge = document.createElement('span');
   badge.dataset.badge = '1';
-  badge.className = 'px-1.5 py-0.5 rounded text-white text-[10px] font-mono whitespace-nowrap font-bold';
-  badge.style.background = 'var(--text)';
+  badge.className = 'pill mono';
+  badge.style.cssText = 'background:var(--text);color:#fff;font-size:11px;height:20px;padding:0 6px';
   badge.textContent = accBadge(level);
   hd.appendChild(badge);
   const inp = document.createElement('input');
   inp.dataset.title = '1';
   inp.value = title || 'Untitled';
-  inp.className = 'flex-1 h-7 px-2 rounded-md bg-white border hair';
+  inp.className = 'input';
+  inp.style.cssText = 'flex:1;min-width:0;height:28px;padding:0 8px';
   const _tf0 = titleFont(level);
   inp.style.fontSize = _tf0[0];
   inp.style.fontWeight = _tf0[1];
@@ -142,21 +144,21 @@ function headerNodeEl(level, title) {
 
   const kids = document.createElement('div');
   kids.dataset.kids = '1';
-  kids.className = 'p-2 flex flex-col gap-2';
+  kids.style.cssText = 'padding:10px;display:flex;flex-direction:column;gap:8px';
   w.appendChild(kids);
 
   const bar = document.createElement('div');
-  bar.className = 'flex items-center gap-1.5 px-2.5 pt-2 pb-2.5';
+  bar.style.cssText = 'display:flex;align-items:center;gap:6px;padding:0 10px 10px';
   const addH = mkBtn('+ Header', () => {
     kids.appendChild(headerNodeEl((+w.dataset.level || 1) + 1, 'New section'));
     kids.lastChild.scrollIntoView({ block: 'nearest' });
   });
-  addH.className = 'h-7 px-2.5 rounded-md border hair bg-white text-[11px] font-medium';
+  addH.style.cssText = 'height:28px;padding:0 10px;font-size:12px;font-weight:500';
   const addT = mkBtn('+ Text', () => {
     kids.appendChild(textNodeEl(''));
     kids.lastChild.scrollIntoView({ block: 'nearest' });
   });
-  addT.className = 'h-7 px-2.5 rounded-md border hair bg-white text-[11px] font-medium';
+  addT.style.cssText = 'height:28px;padding:0 10px;font-size:12px;font-weight:500';
   bar.appendChild(addH);
   bar.appendChild(addT);
   w.appendChild(bar);
@@ -248,7 +250,7 @@ async function genInstr() {
   try {
     const r = await api('/api/instructions/generate', 'POST', {});
     renderInstrAcc(r.content || '');
-    toast('generated from template — edit + Save');
+    toast('generated from template; edit and Save');
   } catch (e) {
     toast(e.message + ' (run #9r-sync first)', true);
   }
@@ -260,7 +262,7 @@ async function previewTpl() {
     const box = document.getElementById('tplBox');
     const pre = document.getElementById('tplPre');
     if (box) box.classList.remove('hidden');
-    if (pre) pre.textContent = (r.content || '(no template — run #9r-sync)').slice(0, 4000);
+    if (pre) pre.textContent = (r.content || '(no template; run #9r-sync)').slice(0, 4000);
   } catch (e) {
     toast(e.message, true);
   }
@@ -363,7 +365,7 @@ async function loadPreview() {
     if (box) {
       box.innerHTML = md.trim()
         ? mdRender(md)
-        : '<p class="text-[#8E5A7A] italic">No active instruction — requests fall back to incoming. Run #9r-sync or Generate on the Instructions tab.</p>';
+        : '<p style="color:var(--muted);font-style:italic">No active instruction. Requests fall back to incoming. Run #9r-sync or From template.</p>';
     }
     if (metaEl) {
       metaEl.textContent = (r.active ? 'active' : 'empty') +

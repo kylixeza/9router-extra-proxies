@@ -1,34 +1,83 @@
 'use strict';
 
-function renderSkills(S) {
-  const skillsEl = document.getElementById('skills');
-  if (!skillsEl) return;
-  skillsEl.innerHTML = S.length ? S.map(s => `
-    <div class="card p-4 flex flex-col">
-      <div class="flex items-start justify-between mb-2">
-        <div class="flex items-center gap-2">
-          <div>
-            <div class="font-semibold text-sm leading-tight">${esc(s.name)}</div>
-            <div class="text-xs num" style="color:var(--muted)">${s.keywords.length} keys</div>
+function filteredSkills() {
+  const f = (document.getElementById('q')?.value || '').toLowerCase().trim();
+  return (D.skills || []).filter(s =>
+    !f ||
+    s.name.toLowerCase().includes(f) ||
+    (s.path || '').toLowerCase().includes(f) ||
+    (s.description || '').toLowerCase().includes(f) ||
+    s.keywords.some(k => k.toLowerCase().includes(f))
+  );
+}
+
+function renderSkillTable(targetBody, list, { cap = null } = {}) {
+  if (!targetBody) return;
+  const rows = cap ? list.slice(0, cap) : list;
+  if (!rows.length) {
+    targetBody.innerHTML = `<tr><td colspan="3"><div class="empty-box">No agent skills match this filter.</div></td></tr>`;
+    return;
+  }
+  targetBody.innerHTML = rows.map(s => {
+    const isMatched = matchedState && matchedState.skills.has(s.name);
+    const isSelected = selectedItem && selectedItem.kind === 'skill' && selectedItem.name === s.name;
+    const kwPreview = s.keywords.slice(0, 4).map(esc).join(', ') + (s.keywords.length > 4 ? ` +${s.keywords.length - 4}` : '');
+    const sub = s.description ? s.description.slice(0, 76) + (s.description.length > 76 ? '…' : '') : (kwPreview || 'No description');
+    return `
+      <tr class="${isMatched ? 'is-matched' : ''}${isSelected ? ' is-selected' : ''}">
+        <td>
+          <div class="row-title">
+            <button type="button" class="row-link" onclick="inspectRule('skill','${q(s.name)}')">${esc(s.name)}</button>
+            ${isMatched ? '<span class="pill pos">matched</span>' : ''}
           </div>
+          <div class="row-sub">${esc(sub)}</div>
+        </td>
+        <td class="n num">${s.keywords.length}</td>
+        <td class="n">
+          <button type="button" class="btn-text btn-sm" onclick="inspectRule('skill','${q(s.name)}')">Edit</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderSkillDetail(s) {
+  if (!s) return '<div class="empty-box">Skill not found.</div>';
+  return `
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+        <div>
+          <h3 style="margin:0;font-size:16px;font-weight:600">${esc(s.name)}</h3>
+          <div class="row-sub num">${s.keywords.length} trigger keywords</div>
         </div>
-        <button onclick="delS('${esc(s.name)}')" class="text-[12px] px-1" style="color:var(--muted)" title="Delete skill">del</button>
+        <button type="button" onclick="delS('${q(s.name)}')" class="btn btn-sm btn-danger">Delete</button>
       </div>
-      <div class="text-[12px] leading-snug mb-1" style="color:var(--muted)" title="${esc(s.description || '')}">${esc((s.description || '').slice(0, 160))}${(s.description || '').length > 160 ? '…' : ''}</div>
-      <textarea id="sd-${esc(s.name)}" rows="2" placeholder="description" class="w-full px-2 py-1.5 rounded-md border hair text-[12px] resize-y" style="background:var(--raised)">${esc(s.description || '')}</textarea>
-      <div class="flex gap-1.5 my-2">
-        <input id="sp-${esc(s.name)}" value="${esc(s.path || '')}" placeholder="/path/SKILL.md" class="flex-1 h-8 px-2 rounded-md border hair text-[11px] font-mono" style="background:var(--raised)">
-        <button onclick="setDescPath('${esc(s.name)}')" class="h-8 px-2 rounded-md border hair text-[12px] bg-white">Save</button>
+
+      <div class="field">
+        <label for="sd-${esc(s.name)}">Description</label>
+        <textarea id="sd-${esc(s.name)}" rows="3" class="textarea" placeholder="When to activate this skill">${esc(s.description || '')}</textarea>
       </div>
-      <div class="flex flex-wrap gap-1 my-1 max-h-24 overflow-y-auto custom-scroll">
-        ${s.keywords.map(k => kwPill(k, `delSK('${q(s.name)}','${q(k)}')`)).join('') || '<span class="text-[12px] italic" style="color:var(--muted)">no keywords</span>'}
+
+      <div class="field">
+        <label for="sp-${esc(s.name)}">SKILL.md path</label>
+        <div style="display:flex;gap:6px">
+          <input id="sp-${esc(s.name)}" value="${esc(s.path || '')}" class="input mono" style="flex:1;min-width:0;font-size:12px" placeholder="/path/to/SKILL.md">
+          <button type="button" onclick="setDescPath('${q(s.name)}')" class="btn btn-primary btn-sm">Save</button>
+        </div>
       </div>
-      <div class="flex gap-1.5 mt-2">
-        <input id="sk-${esc(s.name)}" placeholder="add keyword ⏎" onkeydown="if(event.key==='Enter')addSK('${esc(s.name)}')" class="flex-1 h-8 px-2 rounded-md border hair text-xs" style="background:var(--raised)">
-        <button onclick="addSK('${esc(s.name)}')" class="h-8 px-2.5 rounded-md border hair text-xs bg-white">Add</button>
+
+      <div class="field">
+        <label>Trigger keywords</label>
+        <div class="kw-wrap custom-scroll" style="max-height:140px;overflow-y:auto">
+          ${s.keywords.map(k => kwPill(k, `delSK('${q(s.name)}','${q(k)}')`)).join('') || '<span class="row-sub">No keywords configured</span>'}
+        </div>
+        <div style="display:flex;gap:6px;margin-top:4px">
+          <input id="sk-${esc(s.name)}" class="input" style="flex:1;min-width:0" placeholder="Add keyword and press Enter" onkeydown="if(event.key==='Enter')addSK('${q(s.name)}')">
+          <button type="button" onclick="addSK('${q(s.name)}')" class="btn btn-sm">Add</button>
+        </div>
       </div>
     </div>
-  `).join('') : '<div class="col-span-full card p-10 text-center text-xs" style="color:var(--muted)">No skills match.</div>';
+  `;
 }
 
 async function addSkill() {
@@ -36,17 +85,24 @@ async function addSkill() {
   const path = (document.getElementById('nsp')?.value || '').trim();
   const description = (document.getElementById('nsdesc')?.value || '').trim();
   const kw = (document.getElementById('nskw')?.value || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-  if (!n) return toast('name required', true);
+  if (!n) return toast('Skill name required', true);
   await api('/api/skills', 'POST', { name: n, path, description, keywords: kw });
-  const dlg = document.getElementById('dlgS');
-  if (dlg) dlg.close();
-  reload();
+  document.getElementById('dlgS')?.close();
+  document.getElementById('ns').value = '';
+  document.getElementById('nsp').value = '';
+  document.getElementById('nsdesc').value = '';
+  document.getElementById('nskw').value = '';
+  selectedItem = { kind: 'skill', name: n };
+  await reload();
+  toast(`Saved skill ${n}`);
 }
 
 async function delS(n) {
-  if (!confirm(`delete skill ${n}?`)) return;
+  if (!confirm(`Delete skill "${n}"?`)) return;
   await api('/api/skills/' + encodeURIComponent(n), 'DELETE');
-  reload();
+  if (selectedItem?.kind === 'skill' && selectedItem.name === n) selectedItem = null;
+  await reload();
+  toast(`Deleted skill ${n}`);
 }
 
 async function addSK(s) {
@@ -54,24 +110,18 @@ async function addSK(s) {
   const kw = (i?.value || '').trim();
   if (!kw) return;
   await api(`/api/skills/${encodeURIComponent(s)}/keywords`, 'POST', { keyword: kw });
-  reload();
+  await reload();
 }
 
 async function delSK(s, k) {
   await api(`/api/skills/${encodeURIComponent(s)}/keywords/${encodeURIComponent(k)}`, 'DELETE');
-  reload();
-}
-
-async function setPath(s) {
-  const path = document.getElementById('sp-' + s)?.value.trim() || '';
-  await api('/api/skills/' + encodeURIComponent(s), 'PUT', { path });
-  toast('path saved');
+  await reload();
 }
 
 async function setDescPath(s) {
   const path = document.getElementById('sp-' + s)?.value.trim() || '';
   const description = document.getElementById('sd-' + s)?.value ?? '';
   await api('/api/skills/' + encodeURIComponent(s), 'PUT', { path, description });
-  toast('skill saved');
-  reload();
+  toast('Skill saved');
+  await reload();
 }

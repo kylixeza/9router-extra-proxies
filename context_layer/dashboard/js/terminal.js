@@ -3,6 +3,7 @@
 function clog(m, isErr = false) {
   const b = document.getElementById('cmdOut');
   if (!b) return;
+  b.classList.remove('hidden');
   const d = document.createElement('div');
   d.style.color = isErr ? 'var(--negative)' : 'var(--text)';
   if (isErr) d.style.fontWeight = '600';
@@ -13,7 +14,10 @@ function clog(m, isErr = false) {
 
 function clearCmd() {
   const b = document.getElementById('cmdOut');
-  if (b) b.innerHTML = '';
+  if (b) {
+    b.innerHTML = '';
+    b.classList.add('hidden');
+  }
 }
 
 async function runCmd() {
@@ -43,7 +47,7 @@ async function runCmd() {
     if ((m = raw.match(/^ai\s+([\s\S]+)$/i))) {
       const prompt = m[1];
       if (!localStorage.getItem('9r-key')) {
-        clog('err: no key — run: key $KEY first', true);
+        clog('err: no key. Run: key $KEY first', true);
         return;
       }
       clog('…asking');

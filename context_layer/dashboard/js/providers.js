@@ -1,59 +1,105 @@
 'use strict';
 
-function renderProviders(P) {
-  const provsEl = document.getElementById('provs');
-  if (!provsEl) return;
-  provsEl.innerHTML = P.length ? P.map(p => `
-    <div class="card p-4 flex flex-col">
-      <div class="flex items-start justify-between mb-2">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-md flex items-center justify-center text-[11px] font-semibold uppercase" style="background:var(--pill-neutral-bg);border:1px solid var(--border)">${esc(p.name.slice(0, 2))}</div>
-          <div>
-            <div class="font-semibold text-[13px] leading-tight">${esc(p.name)}</div>
-            <div class="text-[12px] num" style="color:var(--muted)">${p.tools} tools · ${p.keywords.length} keys</div>
+function filteredProviders() {
+  const f = (document.getElementById('q')?.value || '').toLowerCase().trim();
+  return (D.providers || []).filter(p =>
+    !f ||
+    p.name.toLowerCase().includes(f) ||
+    p.keywords.some(k => k.toLowerCase().includes(f)) ||
+    p.toolNames.some(t => t.toLowerCase().includes(f))
+  );
+}
+
+function renderProviderTable(targetBody, list, { cap = null } = {}) {
+  if (!targetBody) return;
+  const rows = cap ? list.slice(0, cap) : list;
+  if (!rows.length) {
+    targetBody.innerHTML = `<tr><td colspan="4"><div class="empty-box">No MCP tool providers match this filter.</div></td></tr>`;
+    return;
+  }
+  targetBody.innerHTML = rows.map(p => {
+    const isMatched = matchedState && matchedState.providers.has(p.name);
+    const isSelected = selectedItem && selectedItem.kind === 'provider' && selectedItem.name === p.name;
+    const kwPreview = p.keywords.slice(0, 4).map(esc).join(', ') + (p.keywords.length > 4 ? ` +${p.keywords.length - 4}` : '');
+    return `
+      <tr class="${isMatched ? 'is-matched' : ''}${isSelected ? ' is-selected' : ''}">
+        <td>
+          <div class="row-title">
+            <button type="button" class="row-link" onclick="inspectRule('provider','${q(p.name)}')">${esc(p.name)}</button>
+            ${isMatched ? '<span class="pill accent">matched</span>' : ''}
           </div>
+          <div class="row-sub">${kwPreview || 'No trigger keywords'}</div>
+        </td>
+        <td class="n num">${p.tools}</td>
+        <td class="n num">${p.keywords.length}</td>
+        <td class="n">
+          <button type="button" class="btn-text btn-sm" onclick="inspectRule('provider','${q(p.name)}')">Inspect</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderProviderDetail(p) {
+  if (!p) return '<div class="empty-box">Provider not found.</div>';
+  return `
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+        <div>
+          <h3 style="margin:0;font-size:16px;font-weight:600">${esc(p.name)}</h3>
+          <div class="row-sub num">${p.tools} gated tools · ${p.keywords.length} trigger keywords</div>
         </div>
-        <button onclick="delP('${esc(p.name)}')" class="text-[12px] px-1" style="color:var(--muted)" title="Delete provider">del</button>
+        <button type="button" onclick="delP('${q(p.name)}')" class="btn btn-sm btn-danger">Delete</button>
       </div>
-      <div class="flex flex-wrap gap-1 my-2 max-h-24 overflow-y-auto custom-scroll">
-        ${p.keywords.map(k => kwPill(k, `delPK('${q(p.name)}','${q(k)}')`)).join('') || '<span class="text-[12px] italic" style="color:var(--muted)">no keywords</span>'}
+
+      <div class="field">
+        <label>Trigger keywords</label>
+        <div class="kw-wrap custom-scroll" style="max-height:132px;overflow-y:auto">
+          ${p.keywords.map(k => kwPill(k, `delPK('${q(p.name)}','${q(k)}')`)).join('') || '<span class="row-sub">No keywords configured</span>'}
+        </div>
+        <div style="display:flex;gap:6px;margin-top:4px">
+          <input id="pk-${esc(p.name)}" class="input" style="flex:1;min-width:0" placeholder="Add keyword and press Enter" onkeydown="if(event.key==='Enter')addPK('${q(p.name)}')">
+          <button type="button" onclick="addPK('${q(p.name)}')" class="btn btn-sm">Add</button>
+        </div>
       </div>
-      <div class="flex gap-1.5 mt-1">
-        <input id="pk-${esc(p.name)}" placeholder="add keyword ⏎" onkeydown="if(event.key==='Enter')addPK('${esc(p.name)}')" class="flex-1 h-8 px-2 rounded-md border hair text-xs" style="background:var(--raised)">
-        <button onclick="addPK('${esc(p.name)}')" class="h-8 px-2.5 rounded-md border hair text-xs bg-white">Add</button>
-      </div>
-      <details class="mt-2 pt-2 border-t hair">
-        <summary class="text-[12px] cursor-pointer" style="color:var(--muted)">tools (${p.tools}) +</summary>
-        <div class="mt-1 max-h-40 overflow-y-auto custom-scroll">
-          ${p.toolNames.map(t => `
-            <div class="flex items-center justify-between py-1 text-[12px] font-mono border-b hair last:border-0">
-              <span class="truncate">${esc(t)}</span>
-              <span class="flex gap-1">
-                <button onclick="moveTool('${q(t)}')" style="color:var(--muted)" title="Move tool">⇄</button>
-                <button onclick="delTool('${q(t)}')" style="color:var(--muted)" title="Delete tool">×</button>
+
+      <div class="field">
+        <label>Gated tools (<span class="num">${p.tools}</span>)</label>
+        <div class="custom-scroll" style="max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:6px">
+          ${p.toolNames.length ? p.toolNames.map(t => `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border-bottom:1px solid var(--rule);font-size:12px">
+              <span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(t)}">${esc(t)}</span>
+              <span style="display:flex;gap:6px;flex-shrink:0">
+                <button type="button" onclick="moveTool('${q(t)}')" class="btn-text btn-sm" style="height:22px;padding:0 6px" title="Move to another provider">Move</button>
+                <button type="button" onclick="delTool('${q(t)}')" class="btn-text btn-sm btn-danger" style="height:22px;padding:0 6px" title="Delete tool">Remove</button>
               </span>
             </div>
-          `).join('')}
+          `).join('') : '<div class="empty-box" style="border:0">No tools recorded for this provider.</div>'}
         </div>
-      </details>
+      </div>
     </div>
-  `).join('') : '<div class="col-span-full card p-10 text-center text-xs" style="color:var(--muted)">No providers match.</div>';
+  `;
 }
 
 async function addProvider() {
   const n = document.getElementById('np')?.value.trim().toLowerCase();
   const kw = (document.getElementById('npkw')?.value || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-  if (!n) return toast('name required', true);
+  if (!n) return toast('Provider name required', true);
   await api('/api/providers', 'POST', { name: n, keywords: kw });
-  const dlg = document.getElementById('dlgP');
-  if (dlg) dlg.close();
-  reload();
+  document.getElementById('dlgP')?.close();
+  document.getElementById('np').value = '';
+  document.getElementById('npkw').value = '';
+  selectedItem = { kind: 'provider', name: n };
+  await reload();
+  toast(`Created provider ${n}`);
 }
 
 async function delP(n) {
-  if (!confirm(`delete provider ${n}?`)) return;
+  if (!confirm(`Delete provider "${n}"?`)) return;
   await api('/api/providers/' + encodeURIComponent(n), 'DELETE');
-  reload();
+  if (selectedItem?.kind === 'provider' && selectedItem.name === n) selectedItem = null;
+  await reload();
+  toast(`Deleted provider ${n}`);
 }
 
 async function addPK(p) {
@@ -61,23 +107,23 @@ async function addPK(p) {
   const kw = (i?.value || '').trim();
   if (!kw) return;
   await api(`/api/providers/${encodeURIComponent(p)}/keywords`, 'POST', { keyword: kw });
-  reload();
+  await reload();
 }
 
 async function delPK(p, k) {
   await api(`/api/providers/${encodeURIComponent(p)}/keywords/${encodeURIComponent(k)}`, 'DELETE');
-  reload();
+  await reload();
 }
 
 async function delTool(t) {
-  if (!confirm(`delete tool ${t}?`)) return;
+  if (!confirm(`Remove tool "${t}"?`)) return;
   await api('/api/tools/' + encodeURIComponent(t), 'DELETE');
-  reload();
+  await reload();
 }
 
 async function moveTool(t) {
-  const to = prompt(`move tool ${t} to which provider?`, D.providers[0]?.name || '');
+  const to = prompt(`Move tool "${t}" to which provider?`, D.providers[0]?.name || '');
   if (!to) return;
   await api('/api/tools/move', 'POST', { tool: t, to: to.trim().toLowerCase() });
-  reload();
+  await reload();
 }

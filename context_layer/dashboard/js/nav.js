@@ -1,52 +1,83 @@
 'use strict';
 
 const VALIANT_VIEWS = {
-  P: 'providers',
-  S: 'skills',
-  M: 'match',
-  I: 'instructions',
-  V: 'preview'
+  O: 'overview',
+  R: 'rules',
+  I: 'instructions'
 };
 
 const HASH_TO_TAB = {
-  providers: 'P',
-  skills: 'S',
-  match: 'M',
+  overview: 'O',
+  rules: 'R',
+  providers: 'R',
+  skills: 'R',
   instructions: 'I',
-  preview: 'V'
+  preview: 'I'
 };
 
-let curTab = 'P';
+let curTab = 'O';
 
-function tab(t) {
+function updateHeaderCopy() {
+  const titleEl = document.getElementById('valiantTitle');
+  const subEl = document.getElementById('valiantSub');
+  const secBtn = document.getElementById('titleSecondaryBtn');
+  const priBtn = document.getElementById('titlePrimaryBtn');
+  if (!titleEl || !subEl) return;
+
+  const provCount = (D.providers || []).length;
+  const toolCount = (D.providers || []).reduce((a, p) => a + p.tools, 0);
+  const skillCount = (D.skills || []).length;
+  const kwCount = (D.providers || []).reduce((a, p) => a + p.keywords.length, 0) +
+    (D.skills || []).reduce((a, s) => a + s.keywords.length, 0);
+
+  if (curTab === 'O') {
+    titleEl.textContent = 'Context routing';
+    subEl.textContent = provCount || skillCount
+      ? `${toolCount} gated MCP tools across ${provCount} providers and ${skillCount} skills (${kwCount} keywords)`
+      : 'No providers or skills indexed yet';
+    if (secBtn) { secBtn.textContent = 'All rules'; secBtn.onclick = () => tab('R'); }
+    if (priBtn) { priBtn.textContent = 'Test prompt'; priBtn.onclick = focusSimulator; }
+  } else if (curTab === 'R') {
+    titleEl.textContent = 'Routing rules';
+    subEl.textContent = `${provCount} MCP providers and ${skillCount} agent skills matched by prompt keywords`;
+    if (secBtn) { secBtn.textContent = 'Overview'; secBtn.onclick = () => tab('O'); }
+    if (priBtn) { priBtn.textContent = activeSubTab === 'providers' ? '+ Add provider' : '+ Add skill'; priBtn.onclick = openActiveAddDlg; }
+  } else {
+    titleEl.textContent = 'Base instructions';
+    subEl.textContent = 'Active Markdown tree overrides incoming system prompts on :20130';
+    if (secBtn) { secBtn.textContent = 'Download .md'; secBtn.onclick = downloadInstr; }
+    if (priBtn) { priBtn.textContent = 'Save changes'; priBtn.onclick = saveInstr; }
+  }
+}
+
+function tab(t, subTab = null) {
   curTab = t;
-  ['P', 'S', 'M', 'I', 'V'].forEach(x => {
+  ['O', 'R', 'I'].forEach(x => {
     const b = document.getElementById('tab' + x);
-    const bm = document.getElementById('tab' + x + '-m');
     const v = document.getElementById('view' + x);
-    if (x === t) {
-      if (b) b.className = 'valiant-nav-link active';
-      if (bm) bm.className = 'valiant-nav-link active';
-      if (v) v.classList.remove('hidden');
-    } else {
-      if (b) b.className = 'valiant-nav-link';
-      if (bm) bm.className = 'valiant-nav-link';
-      if (v) v.classList.add('hidden');
-    }
+    if (b) b.className = x === t ? 'valiant-nav-link active' : 'valiant-nav-link';
+    if (v) v.classList.toggle('hidden', x !== t);
   });
 
-  const slug = VALIANT_VIEWS[t] || 'providers';
+  if (subTab && t === 'R') setRulesSubTab(subTab, false);
+
+  const slug = VALIANT_VIEWS[t] || 'overview';
   if (location.hash !== '#/' + slug) {
     history.replaceState(null, '', '#/' + slug);
   }
 
-  if (t === 'I') loadInstr();
-  if (t === 'V') loadPreview();
+  updateHeaderCopy();
+
+  if (t === 'O') renderOverviewChart();
+  if (t === 'R') renderRulesView();
+  if (t === 'I') { loadInstr(); loadPreview(); }
 }
 
 function handleHash() {
   const h = (location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
-  const t = HASH_TO_TAB[h] || 'P';
+  const t = HASH_TO_TAB[h] || 'O';
+  if (h === 'skills') activeSubTab = 'skills';
+  else if (h === 'providers') activeSubTab = 'providers';
   tab(t);
 }
 

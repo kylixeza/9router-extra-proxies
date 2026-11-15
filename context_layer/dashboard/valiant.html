@@ -7,233 +7,310 @@
 <link rel="icon" type="image/svg+xml" href="/dashboard/assets/valiant.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/dashboard/assets/valiant.css">
 </head>
-<body class="min-h-screen flex flex-col md:flex-row">
+<body>
 
-<!-- Mobile top bar (folds sidebar away on <860px) -->
-<header class="mobile-bar h-12 px-4 items-center justify-between border-b hair" style="background:var(--ground)">
-  <div class="flex items-center gap-2">
-    <button onclick="toggleSidebar()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs font-medium" aria-label="Toggle menu">Menu</button>
-    <img src="/dashboard/assets/valiant.svg" alt="Valiant" class="w-5 h-5 rounded">
-    <span class="font-semibold text-sm">Valiant</span>
-  </div>
-  <div class="flex items-center gap-1.5">
-    <button onclick="openDlg('dlgP')" class="h-8 px-2.5 rounded-md bg-white border hair text-xs font-medium">+ Prov</button>
-    <button onclick="openDlg('dlgS')" class="h-8 px-2.5 rounded-md btn-primary text-xs font-medium">+ Skill</button>
-  </div>
-</header>
-
-<!-- Tinted L-frame: sidebar + top bar share one ground -->
-<div class="flex-1 flex min-h-screen">
-<aside id="valiantSidebar" class="valiant-sidebar" aria-label="Valiant navigation">
-  <div>
-    <div class="h-12 px-4 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <img src="/dashboard/assets/valiant.svg" alt="Valiant" class="w-6 h-6 rounded-md">
-        <span class="font-semibold text-sm tracking-tight">Valiant</span>
-        <span class="text-xs num" style="color:var(--muted)">:20130</span>
-      </div>
-      <button onclick="toggleSidebar()" class="md:hidden h-7 px-2 rounded bg-white border hair text-xs">Close</button>
-    </div>
-    <nav class="px-3 pb-3">
-      <button id="tabP" onclick="tab('P')" class="valiant-nav-link active"><span>Routing rules</span></button>
-      <button id="tabI" onclick="tab('I')" class="valiant-nav-link"><span>Base instructions</span></button>
+<div class="valiant-app">
+  <aside id="valiantSidebar" class="valiant-rail" aria-label="Valiant navigation">
+    <a href="#/overview" class="rail-brand" title="Valiant · context layer (:20130)" aria-label="Valiant home">
+      <img src="/dashboard/assets/valiant.svg" alt="Valiant" width="32" height="32">
+    </a>
+    <nav class="rail-group" aria-label="Valiant sections">
+      <button type="button" id="tabO" onclick="tab('O')" class="valiant-nav-link active" title="Overview" aria-label="Overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 12l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>
+        <span class="rail-label">Overview</span>
+      </button>
+      <button type="button" id="tabR" onclick="tab('R')" class="valiant-nav-link" title="Routing rules" aria-label="Routing rules">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        <span class="rail-label">Rules</span>
+      </button>
+      <button type="button" id="tabI" onclick="tab('I')" class="valiant-nav-link" title="Instructions" aria-label="Instructions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M7 4h8l4 4v12H7z"/><path d="M15 4v4h4M10 12h6M10 16h6"/></svg>
+        <span class="rail-label">Instructions</span>
+      </button>
     </nav>
-  </div>
-  <div class="p-3 space-y-2">
-    <div class="px-2 text-xs leading-relaxed" style="color:var(--muted)">
-      <div><span class="num font-medium" style="color:var(--text)" id="stP">0</span> providers · <span class="num font-medium" style="color:var(--text)" id="stT">0</span> tools</div>
-      <div><span class="num font-medium" style="color:var(--text)" id="stS">0</span> skills · <span class="num font-medium" style="color:var(--text)" id="stK">0</span> keywords</div>
+    <div class="rail-rule" aria-hidden="true"></div>
+    <div class="rail-spacer"></div>
+    <div class="rail-group" aria-label="Actions and layer links">
+      <button type="button" onclick="reload()" class="valiant-nav-link" title="Reload data" aria-label="Reload data">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M20 11A8 8 0 1 0 18.9 15"/><path d="M20 5v6h-6"/></svg>
+        <span class="rail-label">Reload</span>
+      </button>
+      <a href="http://127.0.0.1:20131/dashboard" target="_blank" rel="noopener" class="valiant-nav-link" title="Orch orchestration layer (:20131)" aria-label="Orch orchestration layer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="6" r="2.2"/><circle cx="6.5" cy="17.5" r="2.2"/><circle cx="17.5" cy="17.5" r="2.2"/><path d="M12 8.2v3.8M12 12l-5.5 3.3M12 12l5.5 3.3"/></svg>
+      </a>
+      <a href="http://127.0.0.1:20129/dashboard" target="_blank" rel="noopener" class="valiant-nav-link" title="Leon connection layer (:20129)" aria-label="Leon connection layer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 12h4.2l2.2-6 3.2 12 2.2-6H20"/></svg>
+      </a>
     </div>
-    <div class="flex gap-1.5">
-      <button onclick="openDlg('dlgP')" class="flex-1 h-8 rounded-md bg-white border hair text-xs font-medium">+ Provider</button>
-      <button onclick="openDlg('dlgS')" class="flex-1 h-8 rounded-md btn-primary text-xs font-medium">+ Skill</button>
-    </div>
-    <div class="flex gap-1.5">
-      <button onclick="reload()" class="flex-1 h-8 rounded-md bg-white border hair text-xs font-medium">Reload</button>
-      <a href="http://127.0.0.1:20131/dashboard" target="_blank" class="flex-1 h-8 rounded-md bg-white border hair text-xs font-medium flex items-center justify-center" title="Orch orchestration layer">‹ Orch</a>
-      <a href="http://127.0.0.1:20129/dashboard" target="_blank" class="flex-1 h-8 rounded-md bg-white border hair text-xs font-medium flex items-center justify-center" title="Leon connection layer">Leon ›</a>
-    </div>
-  </div>
-</aside>
+  </aside>
 
-<!-- White sheet inset 8px, radius 16 -->
-<div class="flex-1 min-w-0 p-2">
-<div class="sheet min-h-[calc(100svh-16px)] flex flex-col justify-between">
-  <div>
-    <!-- Top bar inside sheet: search + live prompt router -->
-    <div class="px-6 py-3 border-b hair flex flex-wrap items-center justify-between gap-3">
-      <div class="relative w-full sm:w-64">
-        <input id="q" oninput="render()" placeholder="Filter providers, skills, keywords… ( / )" class="w-full h-8 px-3 rounded-md bg-white border hair text-xs">
+  <div class="valiant-main-col">
+    <header class="chrome-topbar">
+      <div class="topbar-search">
+        <label for="q" class="hidden">Filter providers, skills, or keywords</label>
+        <input id="q" type="search" oninput="onSearchInput()" placeholder="Filter providers, skills, tools, or keywords…">
+        <span class="kbd-hint" aria-hidden="true">/</span>
       </div>
-      <div class="flex items-center gap-2 flex-1 max-w-xl">
-        <input id="mtext" onkeydown="if(event.key==='Enter')doMatch()" placeholder="Test prompt routing: e.g. review pull request diff or inspect firebase auth" class="flex-1 h-8 px-3 rounded-md border hair text-xs" style="background:var(--raised)">
-        <button onclick="doMatch()" class="h-8 px-3 rounded-md btn-primary text-xs font-medium">Test route</button>
-        <button id="clearMatchBtn" onclick="clearMatch()" class="hidden h-8 px-2.5 rounded-md bg-white border hair text-xs" style="color:var(--muted)">Reset</button>
+      <div class="topbar-actions">
+        <span class="freshness num"><span id="hDot" class="status-dot"></span><span id="hStamp">Syncing…</span></span>
+        <button type="button" onclick="openDlg('dlgP')" class="btn btn-sm">+ Provider</button>
+        <button type="button" onclick="openDlg('dlgS')" class="btn btn-primary btn-sm">+ Skill</button>
       </div>
-    </div>
+    </header>
 
-    <main class="px-6 py-5">
-      <!-- Title row -->
-      <div class="flex items-baseline justify-between flex-wrap gap-2 mb-4">
-        <div>
-          <h1 id="valiantTitle" class="font-semibold tracking-tight" style="font-size:24px;line-height:1.2">Context routing</h1>
-          <p id="valiantSub" class="text-sm mt-1" style="color:var(--muted)">Gate MCP tool groups and skills per prompt by keyword match</p>
+    <main class="sheet">
+      <div class="sheet-body">
+        <div class="title-row">
+          <div>
+            <h1 id="valiantTitle">Context routing</h1>
+            <p id="valiantSub" class="title-sub">Loading gated tools and skill definitions…</p>
+          </div>
+          <div class="title-actions">
+            <button type="button" id="titleSecondaryBtn" onclick="tab('R')" class="btn">All rules</button>
+            <button type="button" id="titlePrimaryBtn" onclick="focusSimulator()" class="btn btn-primary">Test prompt</button>
+          </div>
         </div>
-        <div id="matchResBox" class="hidden flex items-center gap-1.5 flex-wrap">
-          <span class="text-xs" style="color:var(--muted)">Matched:</span>
-          <div id="matchRes" class="flex flex-wrap gap-1.5"></div>
+
+        <div id="loadErrBox" class="error-box hidden" role="alert">
+          <span id="loadErrText">Failed to load index.</span>
+          <button type="button" onclick="reload()" class="btn btn-sm">Retry</button>
         </div>
+
+        <!-- VIEW O: OVERVIEW -->
+        <section id="viewO" class="overview-grid">
+          <div class="tray">
+            <div class="kpi-strip" role="tablist" aria-label="Overview metric selector">
+              <button type="button" class="kpi-cell lead" role="tab" aria-selected="true" onclick="selectMetric('tools')" id="kpiBtn-tools">
+                <span class="kpi-l" style="display:block">Gated MCP tools</span>
+                <span class="kpi-v num" style="display:block" id="kpiTools">0</span>
+                <span class="kpi-sub" style="display:block" id="kpiToolsSub">held back until keyword match</span>
+              </button>
+              <button type="button" class="kpi-cell" role="tab" aria-selected="false" onclick="selectMetric('providers')" id="kpiBtn-providers">
+                <span class="kpi-l" style="display:block">Tool providers</span>
+                <span class="kpi-v num" style="display:block" id="kpiProvs">0</span>
+                <span class="kpi-sub" style="display:block" id="kpiProvsSub">active MCP groups</span>
+              </button>
+              <button type="button" class="kpi-cell" role="tab" aria-selected="false" onclick="selectMetric('skills')" id="kpiBtn-skills">
+                <span class="kpi-l" style="display:block">Registered skills</span>
+                <span class="kpi-v num" style="display:block" id="kpiSkills">0</span>
+                <span class="kpi-sub" style="display:block" id="kpiSkillsSub">SKILL.md definitions</span>
+              </button>
+              <button type="button" class="kpi-cell" role="tab" aria-selected="false" onclick="selectMetric('keywords')" id="kpiBtn-keywords">
+                <span class="kpi-l" style="display:block">Trigger keywords</span>
+                <span class="kpi-v num" style="display:block" id="kpiKeys">0</span>
+                <span class="kpi-sub" style="display:block" id="kpiKeysSub">across providers and skills</span>
+              </button>
+            </div>
+
+            <div class="tray-body">
+              <div class="card card-pad">
+                <div class="title-row" style="margin-bottom:8px">
+                  <div>
+                    <h2 id="chartTitle" style="margin:0;font-size:15px;font-weight:600">Gated tools by provider</h2>
+                  </div>
+                  <span id="chartNote" class="card-meta">click a bar to inspect</span>
+                </div>
+                <div id="overviewChart" class="chart"></div>
+              </div>
+
+              <div class="card sim-card">
+                <div>
+                  <div class="title-row" style="margin-bottom:8px">
+                    <h2 style="margin:0;font-size:15px;font-weight:600">Prompt gate test</h2>
+                    <button type="button" id="clearMatchBtn" onclick="clearMatch()" class="btn-text btn-sm hidden">Reset</button>
+                  </div>
+                  <div class="sim-form">
+                    <label for="mtext" class="hidden">Test prompt</label>
+                    <input id="mtext" class="input" onkeydown="if(event.key==='Enter')doMatch()" placeholder="e.g. review pull request or inspect firebase auth">
+                    <button type="button" onclick="doMatch()" class="btn btn-primary">Route</button>
+                  </div>
+                </div>
+                <div class="sim-presets" aria-label="Sample prompts">
+                  <button type="button" class="preset-btn" onclick="runPreset('review pull request diff')">review pull request diff</button>
+                  <button type="button" class="preset-btn" onclick="runPreset('inspect figma design file')">inspect figma design file</button>
+                  <button type="button" class="preset-btn" onclick="runPreset('check firebase auth rules')">check firebase auth rules</button>
+                </div>
+                <div id="simOutput" class="sim-output">
+                  <span style="color:var(--muted)">Enter a prompt to preview which MCP tool groups and skills pass the gate.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card col-6">
+            <div class="card-head">
+              <div>
+                <h2>MCP tool providers</h2>
+                <span class="card-meta" id="ovProvMeta">4 groups</span>
+              </div>
+              <button type="button" onclick="tab('R', 'providers')" class="btn-text">View all</button>
+            </div>
+            <div class="table-wrap">
+              <table class="valiant-table">
+                <thead>
+                  <tr>
+                    <th>Provider</th>
+                    <th class="n">Tools</th>
+                    <th class="n">Keywords</th>
+                    <th class="n">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="ovProvBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card col-6">
+            <div class="card-head">
+              <div>
+                <h2>Top agent skills</h2>
+                <span class="card-meta" id="ovSkillMeta">by keyword count</span>
+              </div>
+              <button type="button" onclick="tab('R', 'skills')" class="btn-text">View all</button>
+            </div>
+            <div class="table-wrap">
+              <table class="valiant-table">
+                <thead>
+                  <tr>
+                    <th>Skill</th>
+                    <th class="n">Keywords</th>
+                    <th class="n">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="ovSkillBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW R: ROUTING RULES (Tabbed Table + Inspector Drawer) -->
+        <section id="viewR" class="hidden" style="display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div class="tabs" role="tablist" aria-label="Rule type">
+              <button type="button" role="tab" id="subTab-providers" class="tab-btn" aria-selected="true" onclick="setRulesSubTab('providers')">Providers (<span id="countProvTab" class="num">0</span>)</button>
+              <button type="button" role="tab" id="subTab-skills" class="tab-btn" aria-selected="false" onclick="setRulesSubTab('skills')">Skills (<span id="countSkillTab" class="num">0</span>)</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span id="rulesSummaryCount" class="card-meta num">0 rules</span>
+              <button type="button" id="rulesAddBtn" onclick="openActiveAddDlg()" class="btn btn-primary btn-sm">+ Add provider</button>
+            </div>
+          </div>
+
+          <div class="split-layout">
+            <div class="card" style="overflow:hidden">
+              <div id="rulesTableWrap" class="table-wrap"></div>
+            </div>
+            <aside class="card card-pad detail-pane" id="ruleDetailPane" aria-label="Rule details">
+              <div class="empty-box">Select a provider or skill row to edit keywords, tools, or description.</div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- VIEW I: INSTRUCTIONS -->
+        <section id="viewI" class="hidden">
+          <div class="instr-grid">
+            <div class="card card-pad">
+              <div class="title-row" style="margin-bottom:12px">
+                <div>
+                  <h2 style="margin:0;font-size:16px;font-weight:600">Header-tree editor</h2>
+                  <p class="row-sub" id="instrMeta">Loading instruction metadata…</p>
+                </div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+                <button type="button" onclick="saveInstr()" class="btn btn-primary btn-sm">Save changes</button>
+                <button type="button" onclick="addRootHeader()" class="btn btn-sm">+ Section</button>
+                <button type="button" onclick="addRootText()" class="btn btn-sm">+ Text</button>
+                <button type="button" onclick="genInstr()" class="btn btn-sm">From template</button>
+                <button type="button" onclick="previewTpl()" class="btn btn-sm">View template</button>
+                <button type="button" onclick="clearInstr()" class="btn btn-sm btn-danger">Clear</button>
+              </div>
+              <div id="instrAcc" style="display:flex;flex-direction:column;gap:10px"></div>
+              <div id="tplBox" class="hidden" style="margin-top:12px">
+                <pre id="tplPre" class="custom-scroll mono" style="max-height:240px;overflow-y:auto;padding:12px;border-radius:6px;background:var(--raised);border:1px solid var(--border);font-size:12px;white-space:pre-wrap;margin:0"></pre>
+              </div>
+            </div>
+
+            <div class="card card-pad">
+              <div class="title-row" style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--rule)">
+                <div>
+                  <h2 style="margin:0;font-size:16px;font-weight:600">Rendered preview</h2>
+                  <p class="row-sub num" id="previewMeta">Live markdown output</p>
+                </div>
+                <div style="display:flex;gap:6px">
+                  <button type="button" onclick="downloadInstr()" class="btn btn-sm">Download .md</button>
+                  <button type="button" onclick="loadPreview()" class="btn btn-sm">Refresh</button>
+                </div>
+              </div>
+              <div id="previewBox" class="md-prose custom-scroll"></div>
+            </div>
+          </div>
+        </section>
       </div>
 
-      <!-- VIEW P: ROUTING (KPI strip + 2-column Providers & Skills lists) -->
-      <section id="viewP" class="space-y-4">
-        <div class="kpi-strip">
-          <div class="kpi-cell lead">
-            <div class="kpi-l">Gated MCP tools</div>
-            <div class="kpi-v num" id="kpiTools">0</div>
-            <div class="kpi-sub">held back until keyword match</div>
-          </div>
-          <div class="kpi-cell">
-            <div class="kpi-l">Tool providers</div>
-            <div class="kpi-v num" id="kpiProvs">0</div>
-            <div class="kpi-sub">active MCP groups</div>
-          </div>
-          <div class="kpi-cell">
-            <div class="kpi-l">Registered skills</div>
-            <div class="kpi-v num" id="kpiSkills">0</div>
-            <div class="kpi-sub">dynamic SKILL.md definitions</div>
-          </div>
-          <div class="kpi-cell">
-            <div class="kpi-l">Trigger keywords</div>
-            <div class="kpi-v num" id="kpiKeys">0</div>
-            <div class="kpi-sub">across providers and skills</div>
-          </div>
+      <footer class="sheet-foot">
+        <div id="cmdOut" class="cmd-out custom-scroll hidden"></div>
+        <div class="cmd-row">
+          <label for="cmd" style="font-size:12px;font-weight:600;color:var(--accent)">Command</label>
+          <input id="cmd" class="input" style="flex:1;min-width:0;background:var(--raised)" onkeydown="if(event.key==='Enter')runCmd()" placeholder="add skill code-review path=/skills/review/SKILL.md kw=review,diff; ask review pull request; help">
+          <button type="button" onclick="runCmd()" class="btn btn-sm">Run</button>
+          <button type="button" onclick="clearCmd()" class="btn-text btn-sm">Reset</button>
         </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-          <!-- Providers column -->
-          <div class="card overflow-hidden">
-            <div class="px-4 py-3 border-b hair flex items-center justify-between">
-              <div>
-                <h2 class="font-semibold text-base">MCP tool providers</h2>
-                <p class="text-xs" style="color:var(--muted)">Tool groups injected when a prompt matches their keywords</p>
-              </div>
-              <button onclick="openDlg('dlgP')" class="h-8 px-3 rounded-md bg-white border hair text-xs font-medium">+ Provider</button>
-            </div>
-            <div id="provs"></div>
-          </div>
-
-          <!-- Skills column -->
-          <div class="card overflow-hidden">
-            <div class="px-4 py-3 border-b hair flex items-center justify-between">
-              <div>
-                <h2 class="font-semibold text-base">Agent skills</h2>
-                <p class="text-xs" style="color:var(--muted)">Skill definitions advertised when a prompt matches their keywords</p>
-              </div>
-              <button onclick="openDlg('dlgS')" class="h-8 px-3 rounded-md bg-white border hair text-xs font-medium">+ Skill</button>
-            </div>
-            <div id="skills"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- VIEW I: INSTRUCTIONS (Side-by-side Editor + Live Preview) -->
-      <section id="viewI" class="hidden">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-          <div class="card p-4">
-            <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
-              <div>
-                <h2 class="font-semibold text-base">Header-tree editor</h2>
-                <p class="text-xs" style="color:var(--muted)">Database active instruction overrides incoming system prompt</p>
-              </div>
-              <span id="instrMeta" class="text-xs num" style="color:var(--muted)"></span>
-            </div>
-            <div class="flex items-center gap-1.5 mb-3 flex-wrap">
-              <button onclick="saveInstr()" class="h-8 px-3.5 rounded-md btn-primary text-xs font-medium">Save changes</button>
-              <button onclick="addRootHeader()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs font-medium">+ Section</button>
-              <button onclick="addRootText()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs font-medium">+ Text</button>
-              <button onclick="genInstr()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs font-medium">From template</button>
-              <button onclick="previewTpl()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs font-medium">View template</button>
-              <button onclick="clearInstr()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs font-medium" style="color:var(--negative)">Clear</button>
-            </div>
-            <textarea id="instrTree" style="display:none"></textarea>
-            <div id="instrAcc" class="flex flex-col gap-3"></div>
-            <div id="tplBox" class="hidden mt-3">
-              <pre id="tplPre" class="max-h-64 overflow-y-auto custom-scroll p-3 rounded-lg text-xs whitespace-pre-wrap" style="background:var(--raised);border:1px solid var(--hair)"></pre>
-            </div>
-          </div>
-
-          <div class="card p-4">
-            <div class="flex items-center justify-between mb-3 pb-2 border-b hair">
-              <div>
-                <h2 class="font-semibold text-base">Rendered preview</h2>
-                <span id="previewMeta" class="text-xs num" style="color:var(--muted)">live markdown output</span>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <button onclick="downloadInstr()" class="h-8 px-3 rounded-md bg-white border hair text-xs font-medium">Download .md</button>
-                <button onclick="loadPreview()" class="h-8 px-2.5 rounded-md bg-white border hair text-xs font-medium">Refresh</button>
-              </div>
-            </div>
-            <div id="previewBox" class="md-prose max-w-none overflow-y-auto custom-scroll"></div>
-          </div>
-        </div>
-      </section>
+      </footer>
     </main>
   </div>
+</div>
 
-  <!-- Compact command bar at foot of sheet -->
-  <footer class="px-4 md:px-6 py-3 border-t hair">
-    <div id="cmdOut" class="hidden mb-2 px-3 py-2 max-h-28 overflow-y-auto custom-scroll rounded-md text-xs leading-relaxed" style="background:var(--raised);color:var(--text)"></div>
-    <div class="flex items-center gap-2">
-      <span class="text-xs font-medium" style="color:var(--accent)">Command</span>
-      <input id="cmd" onkeydown="if(event.key==='Enter')runCmd()" placeholder="add skill code-review path=/skills/review/SKILL.md kw=review,diff · ask review pull request · help" class="flex-1 min-w-0 h-8 px-3 rounded-md border hair text-xs" style="background:var(--raised)">
-      <button onclick="runCmd()" class="h-8 px-3 rounded-md bg-white border hair text-xs font-medium flex-shrink-0">Run</button>
-      <button onclick="clearCmd()" class="h-8 px-2.5 rounded-md text-xs flex-shrink-0" style="color:var(--muted)">Reset</button>
+<dialog id="dlgP" aria-labelledby="dlgPTitle">
+  <div class="dlg-body">
+    <h3 id="dlgPTitle">New provider</h3>
+    <div class="field">
+      <label for="np">Provider name</label>
+      <input id="np" class="input" placeholder="github">
     </div>
-  </footer>
-</div>
-</div>
-</div>
-
-<dialog id="dlgP" class="rounded-xl p-0 border hair max-w-sm w-full" style="background:var(--surface);color:var(--text)">
-  <div class="p-5">
-    <h3 class="font-semibold text-sm mb-4">New provider</h3>
-    <label class="text-xs font-medium">Provider name</label>
-    <input id="np" placeholder="github" class="mt-1 mb-3 w-full px-3 h-9 rounded-lg border hair bg-white text-xs">
-    <label class="text-xs font-medium">Trigger keywords</label>
-    <input id="npkw" placeholder="pull request, issue, commit" class="mt-1 w-full px-3 h-9 rounded-lg border hair bg-white text-xs">
-    <div class="flex justify-end gap-2 mt-5">
-      <button onclick="this.closest('dialog').close()" class="h-8 px-3 text-xs" style="color:var(--muted)">Cancel</button>
-      <button onclick="addProvider()" class="h-8 px-4 rounded-md btn-primary text-xs font-medium">Create</button>
+    <div class="field">
+      <label for="npkw">Trigger keywords (comma-separated)</label>
+      <input id="npkw" class="input" placeholder="pull request, issue, commit">
+    </div>
+    <div class="dlg-foot">
+      <button type="button" onclick="this.closest('dialog').close()" class="btn-text">Cancel</button>
+      <button type="button" onclick="addProvider()" class="btn btn-primary">Create</button>
     </div>
   </div>
 </dialog>
 
-<dialog id="dlgS" class="rounded-xl p-0 border hair max-w-sm w-full" style="background:var(--surface);color:var(--text)">
-  <div class="p-5">
-    <h3 class="font-semibold text-sm mb-4">New skill</h3>
-    <label class="text-xs font-medium">Skill name</label>
-    <input id="ns" placeholder="code-review" class="mt-1 mb-3 w-full px-3 h-9 rounded-lg border hair bg-white text-xs">
-    <label class="text-xs font-medium">SKILL.md file path</label>
-    <input id="nsp" placeholder="/Users/you/.agents/skills/code-review/SKILL.md" class="mt-1 mb-3 w-full px-3 h-9 rounded-lg border hair bg-white text-xs">
-    <label class="text-xs font-medium">Description</label>
-    <textarea id="nsdesc" rows="2" placeholder="When to activate this skill and what it does" class="mt-1 mb-3 w-full px-3 py-2 rounded-lg border hair bg-white text-xs"></textarea>
-    <label class="text-xs font-medium">Trigger keywords</label>
-    <input id="nskw" placeholder="review, diff, pr" class="mt-1 w-full px-3 h-9 rounded-lg border hair bg-white text-xs">
-    <div class="flex justify-end gap-2 mt-5">
-      <button onclick="this.closest('dialog').close()" class="h-8 px-3 text-xs" style="color:var(--muted)">Cancel</button>
-      <button onclick="addSkill()" class="h-8 px-4 rounded-md btn-primary text-xs font-medium">Save</button>
+<dialog id="dlgS" aria-labelledby="dlgSTitle">
+  <div class="dlg-body">
+    <h3 id="dlgSTitle">New skill</h3>
+    <div class="field">
+      <label for="ns">Skill name</label>
+      <input id="ns" class="input" placeholder="code-review">
+    </div>
+    <div class="field">
+      <label for="nsp">SKILL.md file path</label>
+      <input id="nsp" class="input mono" placeholder="/Users/you/.agents/skills/code-review/SKILL.md">
+    </div>
+    <div class="field">
+      <label for="nsdesc">Description</label>
+      <textarea id="nsdesc" rows="2" class="textarea" placeholder="When to activate this skill and what it does"></textarea>
+    </div>
+    <div class="field">
+      <label for="nskw">Trigger keywords (comma-separated)</label>
+      <input id="nskw" class="input" placeholder="review, diff, pr">
+    </div>
+    <div class="dlg-foot">
+      <button type="button" onclick="this.closest('dialog').close()" class="btn-text">Cancel</button>
+      <button type="button" onclick="addSkill()" class="btn btn-primary">Save</button>
     </div>
   </div>
 </dialog>
 
-<div id="toast" class="fixed right-4 bottom-4 z-50 flex flex-col gap-2"></div>
+<div id="toast" class="toast-stack" aria-live="polite"></div>
 
 <script src="/dashboard/assets/js/shared.js"></script>
+<script src="/dashboard/assets/js/charts.js"></script>
 <script src="/dashboard/assets/js/providers.js"></script>
 <script src="/dashboard/assets/js/skills.js"></script>
 <script src="/dashboard/assets/js/match.js"></script>
