@@ -99,6 +99,7 @@ async function handle(req, res) {
   const headers = { ...req.headers };
   delete headers.host; delete headers.connection; delete headers['keep-alive']; delete headers['transfer-encoding'];
   headers['accept-encoding'] = 'identity';
+  if (convId) headers['x-proxy-conversation-id'] = convId;
   if (payload && payload.length) headers['content-length'] = payload.length; else delete headers['content-length'];
 
   const upstreamUrl = new URL(req.url, CFG.target);

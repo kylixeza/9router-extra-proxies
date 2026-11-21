@@ -2,6 +2,7 @@
 const { execFile } = require('child_process');
 const crypto = require('crypto');
 const { CFG, PAUSE_MARKER, sessionDecisions, pendingDialogs, stats } = require('./config');
+const { extractConversationId } = require('../storage_layer/conversation');
 
 function rememberDecision(convId, decision) {
   sessionDecisions.set(convId, decision);
@@ -35,20 +36,7 @@ function usageFromSseTail(tail) {
 }
 
 function getConversationId(body, req) {
-  const explicit = req.headers['x-session-id'] || req.headers['x-conversation-id']
-    || body.conversation_id || body.session_id || (body.metadata && body.metadata.session_id);
-  if (explicit) return String(explicit);
-
-  const msgs = Array.isArray(body.messages) ? body.messages : [];
-  const firstSys = msgs.find(m => m && (m.role === 'system' || m.role === 'developer'));
-  const firstUser = msgs.find(m => m && m.role === 'user');
-
-  const seed = [
-    firstSys ? extractText(firstSys.content).slice(0, 400) : '',
-    firstUser ? extractText(firstUser.content).slice(0, 600) : 'default-session',
-  ].join('||');
-
-  return 'conv_' + crypto.createHash('sha1').update(seed).digest('hex').slice(0, 16);
+  return extractConversationId(req && req.headers, body) || 'conv_default';
 }
 
 function checkAndCleanChatConfirmation(body, convId) {

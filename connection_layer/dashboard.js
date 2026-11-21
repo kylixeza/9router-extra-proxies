@@ -150,6 +150,7 @@ async function listLogs(opts) {
   // file fallback
   try {
     const { extractProjectName } = require('../storage_layer/project');
+    const { extractConversationId } = require('../storage_layer/conversation');
     const { parseProviderModel } = require('./utils');
     const [bm, files] = await Promise.all([
       readBookmarks(),
@@ -166,11 +167,13 @@ async function listLogs(opts) {
         liveIds.add(m.id);
         let proj = null;
         try { proj = extractProjectName(rec.requestHeaders, rec.request); } catch (_) {}
+        let conv = null;
+        try { conv = extractConversationId(rec.requestHeaders, rec.request); } catch (_) {}
         const pm = parseProviderModel(m.model);
         const b = bm[m.id];
         logs.push({
           id: m.id, created_at: st.mtime.toISOString(), file: f,
-          project_name: proj, method: m.method, path: m.path, model: m.model,
+          conversation_id: conv, project_name: proj, method: m.method, path: m.path, model: m.model,
           provider: m.provider || pm.provider,
           stream: !!m.stream,
           status: m.status, ms: m.ms, attempts: m.attempts, fallback_used: m.fallbackUsed || null,

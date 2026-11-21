@@ -61,7 +61,8 @@ function upstreamHeaders(req, payload) {
   const h = { ...req.headers };
   delete h.host; delete h.connection; delete h['keep-alive']; delete h['transfer-encoding'];
   for (const k of Object.keys(h)) {
-    if (k.toLowerCase().startsWith('x-orch-')) delete h[k];
+    const kl = k.toLowerCase();
+    if (kl.startsWith('x-orch-') || kl.startsWith('x-proxy-')) delete h[k];
   }
   h['accept-encoding'] = 'identity';
   if (payload && payload.length) h['content-length'] = payload.length; else delete h['content-length'];
@@ -181,18 +182,9 @@ function writeLog(meta, headers, payload, respText) {
       try {
         const storage = require('../storage_layer');
         if (storage.isEnabled()) {
-          const h = safeHeaders;
-          let conversationId = null;
-          if (h['x-conversation-id']) conversationId = String(h['x-conversation-id']);
-          else if (h['x-session-id']) conversationId = String(h['x-session-id']);
-          else if (reqBody && typeof reqBody === 'object') {
-            conversationId = reqBody.conversation_id || reqBody.session_id
-              || (reqBody.metadata && reqBody.metadata.session_id) || null;
-            if (conversationId) conversationId = String(conversationId);
-          }
           await storage.logProxyRequest({
             id: String(meta.id),
-            conversationId,
+            conversationId: storage.extractConversationId(safeHeaders, reqBody),
             projectName: storage.extractProjectName(safeHeaders, reqBody),
             method: meta.method,
             path: meta.path,
