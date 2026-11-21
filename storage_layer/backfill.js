@@ -1,23 +1,10 @@
 'use strict';
-// One-off: node storage_layer/backfill.js — inserts logs/*.json, skips existing ids.
+// One-off: node storage_layer/backfill.js — inserts logs/*.json, backfills missing projects & conversations.
 const fs = require('fs');
 const pathMod = require('path');
-const { logProxyRequest, ensureSchema, close, isEnabled, extractProjectName, query } = require('./index');
-
-function extractConversationId(headers, body) {
-  const h = headers || {};
-  if (h['x-conversation-id']) return String(h['x-conversation-id']);
-  if (h['x-session-id']) return String(h['x-session-id']);
-  if (body && typeof body === 'object') {
-    if (body.conversation_id) return String(body.conversation_id);
-    if (body.session_id) return String(body.session_id);
-    if (body.metadata && body.metadata.session_id) return String(body.metadata.session_id);
-  }
-  return null;
-}
+const { logProxyRequest, ensureSchema, close, isEnabled, extractProjectName, extractConversationId, query } = require('./index');
 
 async function fillMissingProjects() {
-  // Existing rows inserted before project_name existed.
   const res = await query(`SELECT id, request_headers, request FROM proxy_logs WHERE project_name IS NULL LIMIT 500`);
   if (!res) return 0;
   let n = 0;
@@ -30,11 +17,50 @@ async function fillMissingProjects() {
   return n;
 }
 
+async function fillMissingConversations(batchSize = 200) {
+  let total = 0;
+  let afterId = '';
+  for (;;) {
+    const res = await query(
+      `SELECT id, request_headers, request
+       FROM proxy_logs
+       WHERE conversation_id IS NULL
+         AND path IN ('/v1/responses', '/v1/chat/completions')
+         AND id > $1
+       ORDER BY id ASC
+       LIMIT $2`,
+      [afterId, batchSize]
+    );
+    if (!res || !res.rows.length) break;
+    afterId = res.rows[res.rows.length - 1].id;
+    const ids = [];
+    const convs = [];
+    for (const row of res.rows) {
+      const convId = extractConversationId(row.request_headers, row.request);
+      if (!convId) continue;
+      ids.push(row.id);
+      convs.push(convId);
+    }
+    if (ids.length) {
+      await query(
+        `UPDATE proxy_logs AS p
+         SET conversation_id = v.conv_id
+         FROM unnest($1::text[], $2::text[]) AS v(id, conv_id)
+         WHERE p.id = v.id`,
+        [ids, convs]
+      );
+      total += ids.length;
+    }
+    if (res.rows.length < batchSize) break;
+  }
+  return total;
+}
+
 async function main() {
   if (!isEnabled()) { console.error('[backfill] LOG_TO_PG disabled or no DATABASE_URL'); process.exit(1); }
   await ensureSchema();
   const dir = process.env.LOG_DIR || pathMod.join(__dirname, '..', 'logs');
-  const files = (await fs.promises.readdir(dir)).filter(f => f.endsWith('.json')).sort();
+  const files = (await fs.promises.readdir(dir).catch(() => [])).filter(f => f.endsWith('.json')).sort();
   let inserted = 0, skipped = 0, errors = 0;
   for (const f of files) {
     try {
@@ -67,10 +93,12 @@ async function main() {
     }
   }
   console.log(`[backfill] done: inserted=${inserted} skipped=${skipped} errors=${errors} files=${files.length}`);
-  const filled = await fillMissingProjects();
-  console.log(`[backfill] project_name backfilled: ${filled}`);
+  const filledProj = await fillMissingProjects();
+  console.log(`[backfill] project_name backfilled: ${filledProj}`);
+  const filledConv = await fillMissingConversations();
+  console.log(`[backfill] conversation_id backfilled: ${filledConv}`);
   await close();
 }
 
 if (require.main === module) main().catch(err => { console.error('[backfill] fatal:', err.message); process.exit(1); });
-module.exports = { extractConversationId };
+module.exports = { extractConversationId, fillMissingProjects, fillMissingConversations };
