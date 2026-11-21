@@ -5,7 +5,7 @@
   "description": "9Router Extra Proxies: orchestration routing + context shaping + connection resilience + storage logging",
   "main": "9router-proxy.js",
   "scripts": {
-    "test": "node orchestration_layer/test/db-sync.test.js && node orchestration_layer/test/admin-api.test.js && node orchestration_layer/test/pipeline.test.js"
+    "test": "node storage_layer/test/conversation.test.js && node orchestration_layer/test/db-sync.test.js && node orchestration_layer/test/admin-api.test.js && node orchestration_layer/test/pipeline.test.js"
   },
   "dependencies": {
     "pg": "^8.11.3"

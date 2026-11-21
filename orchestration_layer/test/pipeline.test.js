@@ -260,6 +260,9 @@ function sendHttpRequest(baseUrl, method, path, rawBody, extraHeaders = {}) {
       'Scenario 1: normal request body bytes leaving orchestration_layer must be 100% byte-identical'
     );
     assert.equal(firstHopReceived[0].headers['x-orch-model'], undefined);
+    // Verify conversation_id flows from context_layer -> response, and internal x-proxy-* is stripped before 9router
+    assert.match(res1.headers['x-conversation-id'] || '', /^conv_[0-9a-f]{16}$/);
+    assert.equal(r9Received[0].headers['x-proxy-conversation-id'], undefined);
 
     // =========================================================================
     // Scenario 2: `/orch-plan` message (`orch-plan.json`) -> orchestrator + roster at end of last user msg
